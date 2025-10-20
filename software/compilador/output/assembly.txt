@@ -1,0 +1,17 @@
+mov
+add
+adc
+sub
+sbc
+rsb
+rsc
+cmp
+cmn
+tst
+teq
+and
+eor
+orr
+bic
+mov
+mvn
