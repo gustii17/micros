@@ -1,0 +1,112 @@
+-- Code your design here
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity somador is 
+	port(
+    	cin, x, y	:	in bit;
+        cout, z	:	out bit
+    );
+end somador;
+
+architecture main of somador is 
+begin
+	z <= (cin xor y) xor x;
+    cout <= (cin and x) or (cin and y) or (x and y);
+end main;
+
+
+
+entity somador8bits is
+	 port(
+        a, b : in bit_vector(7 downto 0);
+        resultado : out bit_vector(7 downto 0);
+        carry_out : out bit
+    );
+end somador8bits;
+
+
+
+architecture main of somador8bits is
+
+component somador is
+    port(
+        cin, x, y : in bit;
+        cout, z   : out bit
+    );
+end component;
+
+signal carry : bit_vector(7 downto 0); --Este vetor de sinais representará os carries de transição
+
+begin
+
+ -- Primeiro estágio (bit 0)
+    FA0: somador port map(
+        cin => '0',           -- Carry-in inicial
+        x => a(0),
+        y => b(0),
+        cout => carry(0),     -- Carry para próximo estágio
+        z => resultado(0)
+    );
+    
+    -- Estágios intermediários (bits 1 a 6)
+    FA1: somador port map(
+        cin => carry(0),
+        x => a(1),
+        y => b(1), 
+        cout => carry(1),
+        z => resultado(1)
+    );
+    
+     FA2: somador port map(
+        cin => carry(1),
+        x => a(2),
+        y => b(2), 
+        cout => carry(2),
+        z => resultado(2)
+    );
+    
+    FA3: somador port map(
+        cin => carry(2),
+        x => a(3),
+        y => b(3), 
+        cout => carry(3),
+        z => resultado(3)
+    );
+    
+     FA4: somador port map(
+        cin => carry(3),
+        x => a(4),
+        y => b(4), 
+        cout => carry(4),
+        z => resultado(4)
+    );
+    
+    FA5: somador port map(
+        cin => carry(4),
+        x => a(5),
+        y => b(5), 
+        cout => carry(5),
+        z => resultado(5)
+    );
+    
+    FA6: somador port map(
+        cin => carry(5),
+        x => a(6),
+        y => b(6), 
+        cout => carry(6),
+        z => resultado(6)
+    );
+    
+    FA7: somador port map(
+        cin => carry(6),
+        x => a(7),
+        y => b(7),
+        cout => carry(7),
+        z => resultado(7)
+    );
+    
+    carry_out <= carry(7);  -- Carry final
+    
+end main;
+    	

@@ -1,0 +1,44 @@
+-- Code your testbench here
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity testbench is
+-- empty
+end testbench; 
+
+architecture tb of testbench is
+
+component somador8bits is
+    port(
+        a, b : in bit_vector(7 downto 0);
+        resultado : out bit_vector(7 downto 0);
+        carry_out : out bit
+    );
+end component;
+
+signal a_signal, b_signal, resultado_signal : bit_vector(7 downto 0);
+signal carry_out_signal : bit;
+
+begin
+
+  DUT: somador8bits port map(
+    a => a_signal,
+    b => b_signal,
+    resultado => resultado_signal,
+    carry_out => carry_out_signal
+  );
+
+  process
+  begin
+    -- Teste 1: Soma simples sem carry
+    a_signal <= "00000001";
+    b_signal <= "00000001";
+    wait for 1 ns;
+    assert(resultado_signal = "00000010") report "Fail 1+1" severity error;
+    assert(carry_out_signal = '0') report "Fail carry 1+1" severity error;
+    
+
+    assert false report "All tests passed!" severity note;
+    wait;
+  end process;
+end tb;
