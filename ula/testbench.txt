@@ -62,7 +62,7 @@ begin
     carry_out_sub => carry_out_sub_signal
   );
 
-  -- Instancia do multiplicador
+  -- Instancia do multiplicador (agora com bit shifting)
   DUT_MULTIPLICADOR: multiplicador8bits port map(
     a => a_mult,
     b => b_mult,
@@ -85,13 +85,12 @@ begin
     wait for 1 ns;
     assert(resultado_sub_signal = "00000010") report "Fail 5-3" severity error;
     
-     -- Teste 3: Multiplicacao simples (4 x 4 = 16)
+    -- Teste 3: Multiplicacao com bit shifting (4 x 4 = 16)
     a_mult <= "00000100";  -- 4
     b_mult <= "00000100";  -- 4
     wait for 1 ns;
-    assert(resultado_mult = "00010000") report "Fail 5x3" severity error;
-    assert(overflow_mult = '0') report "Fail overflow 5x3" severity error;
-
+    assert(resultado_mult = "00010000") report "Fail 4x4" severity error;
+    assert(overflow_mult = '0') report "Fail overflow 4x4" severity error;
 
     assert false report "All tests passed!" severity note;
     wait;
