@@ -2,6 +2,22 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 
+
+entity porta_and is
+    port(
+        x, y : in bit;
+        z    : out bit
+    );
+end porta_and;
+
+
+
+architecture main of porta_and is
+begin
+    z <= x and y;
+end main;
+
+
 entity inversora is
 	port(
     	x : in bit;
@@ -15,15 +31,7 @@ begin
 end main;
 
 
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
 entity somador is 
 	port(
     	cin, x, y	:	in bit;
@@ -36,6 +44,7 @@ begin
 	z <= (cin xor y) xor x;
     cout <= (cin and x) or (cin and y) or (x and y);
 end main;
+
 
 
 
@@ -227,5 +236,166 @@ SomadorFinal: somador8bits port map(
 );
     
 end main;
+
+
+entity multiplicador8bits is
+    port(
+        a, b : in bit_vector(7 downto 0);
+        resultado : out bit_vector(7 downto 0);
+        overflow : out bit
+    );
+end multiplicador8bits;
+
+architecture main of multiplicador8bits is
+    
+    component porta_and is
+        port( x, y : in bit; z : out bit );
+    end component;
+    
+    component somador8bits is
+        port( a, b : in bit_vector(7 downto 0);
+              resultado : out bit_vector(7 downto 0);
+              carry_out : out bit );
+    end component;
+    
+    -- Produtos parciais: 8 linhas de 8 bits cada
+    type matriz_produtos is array (0 to 7) of bit_vector(7 downto 0);
+    signal produtos : matriz_produtos;
+    
+    -- Sinais para soma em árvore
+    signal soma1, soma2, soma3, soma4 : bit_vector(7 downto 0);
+    signal soma5, soma6, soma7 : bit_vector(7 downto 0);
+    signal carry1, carry2, carry3, carry4 : bit;
+    signal carry5, carry6, carry7 : bit;
+    
+begin
+    
+    -- Gera os 8 produtos parciais (cada linha deslocada)
+    gen_produtos: for i in 0 to 7 generate
+        gen_bits: for j in 0 to 7 generate
+            -- Cada produto parcial é AND entre a(j) e b(i)
+            AND_IJ: porta_and port map(
+                x => a(j),
+                y => b(i),
+                z => produtos(i)(j)
+            );
+        end generate gen_bits;
+    end generate gen_produtos;
+    
+    -- ARVORE DE SOMAS 
+    
+    -- Camada 1: Soma produtos 0 e 1 (com deslocamento)
+    SOM1: somador8bits port map(
+        a => produtos(0),                                   -- Produto 0
+        b(0) => '0',                                        -- Desloca produto 1
+        b(1) => produtos(1)(0),
+        b(2) => produtos(1)(1),
+        b(3) => produtos(1)(2),
+        b(4) => produtos(1)(3),
+        b(5) => produtos(1)(4),
+        b(6) => produtos(1)(5),
+        b(7) => produtos(1)(6),
+        resultado => soma1,
+        carry_out => carry1
+    );
+    
+    -- Camada 2: Soma resultado anterior com produto 2 (deslocado +2)
+    SOM2: somador8bits port map(
+        a => soma1,
+        b(0) => '0',
+        b(1) => '0',
+        b(2) => produtos(2)(0),
+        b(3) => produtos(2)(1),
+        b(4) => produtos(2)(2),
+        b(5) => produtos(2)(3),
+        b(6) => produtos(2)(4),
+        b(7) => produtos(2)(5),
+        resultado => soma2,
+        carry_out => carry2
+    );
+    
+    -- Camada 3: Soma com produto 3 (deslocado +3)
+    SOM3: somador8bits port map(
+        a => soma2,
+        b(0) => '0',
+        b(1) => '0',
+        b(2) => '0',
+        b(3) => produtos(3)(0),
+        b(4) => produtos(3)(1),
+        b(5) => produtos(3)(2),
+        b(6) => produtos(3)(3),
+        b(7) => produtos(3)(4),
+        resultado => soma3,
+        carry_out => carry3
+    );
+    
+    -- Camada 4: Soma com produto 4 (deslocado +4)
+    SOM4: somador8bits port map(
+        a => soma3,
+        b(0) => '0',
+        b(1) => '0',
+        b(2) => '0',
+        b(3) => '0',
+        b(4) => produtos(4)(0),
+        b(5) => produtos(4)(1),
+        b(6) => produtos(4)(2),
+        b(7) => produtos(4)(3),
+        resultado => soma4,
+        carry_out => carry4
+    );
+    
+    -- Camada 5: Soma com produto 5 (deslocado +5)
+    SOM5: somador8bits port map(
+        a => soma4,
+        b(0) => '0',
+        b(1) => '0',
+        b(2) => '0',
+        b(3) => '0',
+        b(4) => '0',
+        b(5) => produtos(5)(0),
+        b(6) => produtos(5)(1),
+        b(7) => produtos(5)(2),
+        resultado => soma5,
+        carry_out => carry5
+    );
+    
+    -- Camada 6: Soma com produto 6 (deslocado +6)
+    SOM6: somador8bits port map(
+        a => soma5,
+        b(0) => '0',
+        b(1) => '0',
+        b(2) => '0',
+        b(3) => '0',
+        b(4) => '0',
+        b(5) => '0',
+        b(6) => produtos(6)(0),
+        b(7) => produtos(6)(1),
+        resultado => soma6,
+        carry_out => carry6
+    );
+    
+    -- Camada 7: Soma com produto 7 (deslocado +7)
+    SOM7: somador8bits port map(
+        a => soma6,
+        b(0) => '0',
+        b(1) => '0',
+        b(2) => '0',
+        b(3) => '0',
+        b(4) => '0',
+        b(5) => '0',
+        b(6) => '0',
+        b(7) => produtos(7)(0),
+        resultado => soma7,
+        carry_out => carry7
+    );
+    
+    -- Detecção de overflow e resultado final
+    overflow <= carry1 or carry2 or carry3 or carry4 or carry5 or carry6 or carry7;
+    resultado <= soma7;
+    
+end main;
+
+
+
 
     	
