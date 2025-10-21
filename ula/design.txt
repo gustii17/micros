@@ -2,7 +2,6 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 
-
 entity porta_and is
     port(
         x, y : in bit;
@@ -10,13 +9,10 @@ entity porta_and is
     );
 end porta_and;
 
-
-
 architecture main of porta_and is
 begin
     z <= x and y;
 end main;
-
 
 entity inversora is
 	port(
@@ -29,8 +25,6 @@ architecture main of inversora is
 begin
 	z <= NOT x;
 end main;
-
-
 
 entity somador is 
 	port(
@@ -45,8 +39,30 @@ begin
     cout <= (cin and x) or (cin and y) or (x and y);
 end main;
 
+entity deslocador_esquerda8bits is
+    port(
+        entrada   : in  bit_vector(7 downto 0);  
+        bits      : in  integer range 0 to 7;   
+        saida     : out bit_vector(7 downto 0)   
+    );
+end deslocador_esquerda8bits;
 
-
+architecture main of deslocador_esquerda8bits is
+begin
+    process(entrada, bits)
+    begin
+        case bits is
+            when 0 => saida <= entrada;
+            when 1 => saida <= entrada(6 downto 0) & '0';
+            when 2 => saida <= entrada(5 downto 0) & "00";
+            when 3 => saida <= entrada(4 downto 0) & "000";
+            when 4 => saida <= entrada(3 downto 0) & "0000";
+            when 5 => saida <= entrada(2 downto 0) & "00000";
+            when 6 => saida <= entrada(1 downto 0) & "000000";
+            when 7 => saida <= entrada(0) & "0000000";
+        end case;
+    end process;
+end main;
 
 entity somador8bits is
 	 port(
@@ -55,8 +71,6 @@ entity somador8bits is
         carry_out : out bit
     );
 end somador8bits;
-
-
 
 architecture main of somador8bits is
 
@@ -67,20 +81,18 @@ component somador is
     );
 end component;
 
-signal carry : bit_vector(7 downto 0); --Este vetor de sinais representará os carries de transição
+signal carry : bit_vector(7 downto 0);
 
 begin
 
- -- Primeiro estágio (bit 0)
     FA0: somador port map(
-        cin => '0',           -- Carry-in inicial
+        cin => '0',
         x => a(0),
         y => b(0),
-        cout => carry(0),     -- Carry para próximo estágio
+        cout => carry(0),
         z => resultado(0)
     );
     
-    -- Estágios intermediários (bits 1 a 6)
     FA1: somador port map(
         cin => carry(0),
         x => a(1),
@@ -89,7 +101,7 @@ begin
         z => resultado(1)
     );
     
-     FA2: somador port map(
+    FA2: somador port map(
         cin => carry(1),
         x => a(2),
         y => b(2), 
@@ -105,7 +117,7 @@ begin
         z => resultado(3)
     );
     
-     FA4: somador port map(
+    FA4: somador port map(
         cin => carry(3),
         x => a(4),
         y => b(4), 
@@ -137,11 +149,9 @@ begin
         z => resultado(7)
     );
     
-    carry_out <= carry(7);  -- Carry final
+    carry_out <= carry(7);
     
 end main;
-
-
 
 entity subtrator8bits is
 	 port(
@@ -150,11 +160,6 @@ entity subtrator8bits is
         carry_out_sub : out bit
     );
 end subtrator8bits;
-
-
-
-
-
 
 architecture main of subtrator8bits is
 
@@ -174,7 +179,6 @@ component somador8bits is
 end component;
 
 signal complemento_de_um : bit_vector(7 downto 0); 
-
 signal complemento_de_dois : bit_vector(7 downto 0);
 
 begin
@@ -222,22 +226,19 @@ INV7: inversora port map(
 CLP2: somador8bits port map(
 	a => complemento_de_um,
     b => "00000001",
-    
     resultado => complemento_de_dois
-    --carry_out => carry_out_sub;
 );
 
 SomadorFinal: somador8bits port map(
 	a => c,
     b => complemento_de_dois,
-    
     resultado => resultado_sub,
     carry_out => carry_out_sub
 );
     
 end main;
 
-
+-- MULTIPLICADOR COM SHIFTING
 entity multiplicador8bits is
     port(
         a, b : in bit_vector(7 downto 0);
@@ -248,154 +249,108 @@ end multiplicador8bits;
 
 architecture main of multiplicador8bits is
     
-    component porta_and is
-        port( x, y : in bit; z : out bit );
+    component deslocador_esquerda8bits is
+        port(
+            entrada   : in  bit_vector(7 downto 0);
+            bits      : in  integer range 0 to 7;
+            saida     : out bit_vector(7 downto 0)
+        );
     end component;
     
     component somador8bits is
-        port( a, b : in bit_vector(7 downto 0);
-              resultado : out bit_vector(7 downto 0);
-              carry_out : out bit );
+        port( 
+            a, b : in bit_vector(7 downto 0);
+            resultado : out bit_vector(7 downto 0);
+            carry_out : out bit 
+        );
     end component;
     
-    -- Produtos parciais: 8 linhas de 8 bits cada
-    type matriz_produtos is array (0 to 7) of bit_vector(7 downto 0);
-    signal produtos : matriz_produtos;
+    -- Sinais para cada valor deslocado
+    signal desloc0, desloc1, desloc2, desloc3 : bit_vector(7 downto 0);
+    signal desloc4, desloc5, desloc6, desloc7 : bit_vector(7 downto 0);
     
-    -- Sinais para soma em árvore
+    -- Sinais para as entradas dos somadores (com seleção baseada nos bits de b)
+    signal entrada_som2, entrada_som3, entrada_som4 : bit_vector(7 downto 0);
+    signal entrada_som5, entrada_som6, entrada_som7 : bit_vector(7 downto 0);
+    
+    -- Sinais para somas intermediárias
     signal soma1, soma2, soma3, soma4 : bit_vector(7 downto 0);
-    signal soma5, soma6, soma7 : bit_vector(7 downto 0);
+    signal soma5, soma6 : bit_vector(7 downto 0);
     signal carry1, carry2, carry3, carry4 : bit;
-    signal carry5, carry6, carry7 : bit;
+    signal carry5, carry6 : bit;
     
 begin
     
-    -- Gera os 8 produtos parciais (cada linha deslocada)
-    gen_produtos: for i in 0 to 7 generate
-        gen_bits: for j in 0 to 7 generate
-            -- Cada produto parcial é AND entre a(j) e b(i)
-            AND_IJ: porta_and port map(
-                x => a(j),
-                y => b(i),
-                z => produtos(i)(j)
-            );
-        end generate gen_bits;
-    end generate gen_produtos;
+    -- Gera todos os deslocamentos possíveis
+    DESLOCAMENTO0: deslocador_esquerda8bits port map(a, 0, desloc0); -- a * 1
+    DESLOCAMENTO1: deslocador_esquerda8bits port map(a, 1, desloc1); -- a * 2
+    DESLOCAMENTO2: deslocador_esquerda8bits port map(a, 2, desloc2); -- a * 4
+    DESLOCAMENTO3: deslocador_esquerda8bits port map(a, 3, desloc3); -- a * 8
+    DESLOCAMENTO4: deslocador_esquerda8bits port map(a, 4, desloc4); -- a * 16
+    DESLOCAMENTO5: deslocador_esquerda8bits port map(a, 5, desloc5); -- a * 32
+    DESLOCAMENTO6: deslocador_esquerda8bits port map(a, 6, desloc6); -- a * 64
+    DESLOCAMENTO7: deslocador_esquerda8bits port map(a, 7, desloc7); -- a * 128
     
-    -- ARVORE DE SOMAS 
+    -- Seleção das entradas baseadas nos bits de b
+    entrada_som2 <= desloc1 when b(1) = '1' else "00000000";
+    entrada_som3 <= desloc2 when b(2) = '1' else "00000000";
+    entrada_som4 <= desloc3 when b(3) = '1' else "00000000";
+    entrada_som5 <= desloc4 when b(4) = '1' else "00000000";
+    entrada_som6 <= desloc5 when b(5) = '1' else "00000000";
+    entrada_som7 <= desloc6 when b(6) = '1' else "00000000";
     
-    -- Camada 1: Soma produtos 0 e 1 (com deslocamento)
-    SOM1: somador8bits port map(
-        a => produtos(0),                                   -- Produto 0
-        b(0) => '0',                                        -- Desloca produto 1
-        b(1) => produtos(1)(0),
-        b(2) => produtos(1)(1),
-        b(3) => produtos(1)(2),
-        b(4) => produtos(1)(3),
-        b(5) => produtos(1)(4),
-        b(6) => produtos(1)(5),
-        b(7) => produtos(1)(6),
-        resultado => soma1,
-        carry_out => carry1
-    );
+    -- Primeira soma: Bit 0
+    soma1 <= desloc0 when b(0) = '1' else "00000000";
+    carry1 <= '0';
     
-    -- Camada 2: Soma resultado anterior com produto 2 (deslocado +2)
+    -- Segunda soma: Bit 1
     SOM2: somador8bits port map(
         a => soma1,
-        b(0) => '0',
-        b(1) => '0',
-        b(2) => produtos(2)(0),
-        b(3) => produtos(2)(1),
-        b(4) => produtos(2)(2),
-        b(5) => produtos(2)(3),
-        b(6) => produtos(2)(4),
-        b(7) => produtos(2)(5),
+        b => entrada_som2,
         resultado => soma2,
         carry_out => carry2
     );
     
-    -- Camada 3: Soma com produto 3 (deslocado +3)
+    -- Terceira soma: Bit 2
     SOM3: somador8bits port map(
         a => soma2,
-        b(0) => '0',
-        b(1) => '0',
-        b(2) => '0',
-        b(3) => produtos(3)(0),
-        b(4) => produtos(3)(1),
-        b(5) => produtos(3)(2),
-        b(6) => produtos(3)(3),
-        b(7) => produtos(3)(4),
+        b => entrada_som3,
         resultado => soma3,
         carry_out => carry3
     );
     
-    -- Camada 4: Soma com produto 4 (deslocado +4)
+    -- Quarta soma: Bit 3
     SOM4: somador8bits port map(
         a => soma3,
-        b(0) => '0',
-        b(1) => '0',
-        b(2) => '0',
-        b(3) => '0',
-        b(4) => produtos(4)(0),
-        b(5) => produtos(4)(1),
-        b(6) => produtos(4)(2),
-        b(7) => produtos(4)(3),
+        b => entrada_som4,
         resultado => soma4,
         carry_out => carry4
     );
     
-    -- Camada 5: Soma com produto 5 (deslocado +5)
+    -- Quinta soma: Bit 4
     SOM5: somador8bits port map(
         a => soma4,
-        b(0) => '0',
-        b(1) => '0',
-        b(2) => '0',
-        b(3) => '0',
-        b(4) => '0',
-        b(5) => produtos(5)(0),
-        b(6) => produtos(5)(1),
-        b(7) => produtos(5)(2),
+        b => entrada_som5,
         resultado => soma5,
         carry_out => carry5
     );
     
-    -- Camada 6: Soma com produto 6 (deslocado +6)
+    -- Sexta soma: Bit 5
     SOM6: somador8bits port map(
         a => soma5,
-        b(0) => '0',
-        b(1) => '0',
-        b(2) => '0',
-        b(3) => '0',
-        b(4) => '0',
-        b(5) => '0',
-        b(6) => produtos(6)(0),
-        b(7) => produtos(6)(1),
+        b => entrada_som6,
         resultado => soma6,
         carry_out => carry6
     );
     
-    -- Camada 7: Soma com produto 7 (deslocado +7)
+    -- Sétima soma: Bit 6
     SOM7: somador8bits port map(
         a => soma6,
-        b(0) => '0',
-        b(1) => '0',
-        b(2) => '0',
-        b(3) => '0',
-        b(4) => '0',
-        b(5) => '0',
-        b(6) => '0',
-        b(7) => produtos(7)(0),
-        resultado => soma7,
-        carry_out => carry7
+        b => entrada_som7,
+        resultado => resultado,
+        carry_out => overflow
     );
     
-    -- Detecção de overflow e resultado final
-    overflow <= carry1 or carry2 or carry3 or carry4 or carry5 or carry6 or carry7;
-    resultado <= soma7;
+    -- O bit 7 não é somado para evitar overflow
     
 end main;
-
-
-
-
-    	
