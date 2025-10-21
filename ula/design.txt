@@ -2,6 +2,28 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 
+entity inversora is
+	port(
+    	x : in bit;
+        z : out bit
+    );
+end inversora;
+
+architecture main of inversora is
+begin
+	z <= NOT x;
+end main;
+
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
 entity somador is 
 	port(
     	cin, x, y	:	in bit;
@@ -109,4 +131,101 @@ begin
     carry_out <= carry(7);  -- Carry final
     
 end main;
+
+
+
+entity subtrator8bits is
+	 port(
+        c, d : in bit_vector(7 downto 0);
+        resultado_sub : out bit_vector(7 downto 0);
+        carry_out_sub : out bit
+    );
+end subtrator8bits;
+
+
+
+
+
+
+architecture main of subtrator8bits is
+
+component inversora is
+	port(
+    	x : in bit;
+        z : out bit
+    );
+end component;
+
+component somador8bits is
+   port(
+        a, b : in bit_vector(7 downto 0);
+        resultado : out bit_vector(7 downto 0);
+        carry_out : out bit
+    );
+end component;
+
+signal complemento_de_um : bit_vector(7 downto 0); 
+
+signal complemento_de_dois : bit_vector(7 downto 0);
+
+begin
+
+INV0: inversora port map(
+    x => d(0),
+    z => complemento_de_um(0)
+);
+
+INV1: inversora port map(
+    x => d(1),
+    z => complemento_de_um(1)
+);
+
+INV2: inversora port map(
+    x => d(2),
+    z => complemento_de_um(2)
+);
+
+INV3: inversora port map(
+    x => d(3),
+    z => complemento_de_um(3)
+);
+
+INV4: inversora port map(
+    x => d(4),
+    z => complemento_de_um(4)
+);
+
+INV5: inversora port map(
+    x => d(5),
+    z => complemento_de_um(5)
+);
+
+INV6: inversora port map(
+    x => d(6),
+    z => complemento_de_um(6)
+);
+
+INV7: inversora port map(
+    x => d(7),
+    z => complemento_de_um(7)
+);
+    
+CLP2: somador8bits port map(
+	a => complemento_de_um,
+    b => "00000001",
+    
+    resultado => complemento_de_dois
+    --carry_out => carry_out_sub;
+);
+
+SomadorFinal: somador8bits port map(
+	a => c,
+    b => complemento_de_dois,
+    
+    resultado => resultado_sub,
+    carry_out => carry_out_sub
+);
+    
+end main;
+
     	
