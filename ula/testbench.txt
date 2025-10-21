@@ -16,16 +16,38 @@ component somador8bits is
     );
 end component;
 
+component subtrator8bits is
+    port(
+        c, d : in bit_vector(7 downto 0);
+        resultado_sub : out bit_vector(7 downto 0);
+        carry_out_sub : out bit
+    );
+end component;
+
+-- Sinais para o somador
 signal a_signal, b_signal, resultado_signal : bit_vector(7 downto 0);
 signal carry_out_signal : bit;
 
+-- Sinais para o subtrator
+signal c_signal, d_signal, resultado_sub_signal : bit_vector(7 downto 0);
+signal carry_out_sub_signal : bit;
+
 begin
 
-  DUT: somador8bits port map(
+  -- Instância do somador
+  DUT_SOMADOR: somador8bits port map(
     a => a_signal,
     b => b_signal,
     resultado => resultado_signal,
     carry_out => carry_out_signal
+  );
+
+  -- Instância do subtrator
+  DUT_SUBTRATOR: subtrator8bits port map(
+    c => c_signal,
+    d => d_signal,
+    resultado_sub => resultado_sub_signal,
+    carry_out_sub => carry_out_sub_signal
   );
 
   process
@@ -37,6 +59,13 @@ begin
     assert(resultado_signal = "00000010") report "Fail 1+1" severity error;
     assert(carry_out_signal = '0') report "Fail carry 1+1" severity error;
     
+    -- Teste 2: Subtração simples (5 - 3 = 2)
+    c_signal <= "00000101";  -- 5
+    d_signal <= "00000011";  -- 3
+    wait for 1 ns;
+    assert(resultado_sub_signal = "00000010") report "Fail 5-3" severity error;
+    -- carry_out_sub indica borrow, pode ser ignorado para resultados positivos
+
 
     assert false report "All tests passed!" severity note;
     wait;
