@@ -1,0 +1,305 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+--------------------------------------------------------------------------------
+-- full_adder_1_bit.vhd
+--------------------------------------------------------------------------------
+entity full_adder_1_bit is
+    Port (
+        A    : in  STD_LOGIC;
+        B    : in  STD_LOGIC;
+        Cin  : in  STD_LOGIC;
+        S    : out STD_LOGIC;
+        Cout : out STD_LOGIC
+    );
+end full_adder_1_bit;
+
+architecture Behavioral of full_adder_1_bit is
+begin
+    S    <= A xor B xor Cin;
+    Cout <= (A and B) or (Cin and (A xor B));
+end Behavioral;
+
+--------------------------------------------------------------------------------
+-- full_adder_8_bit.vhd (ULA Simplificada - Apenas Somador)
+--------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+entity full_adder_8_bit is
+    Port (
+        A    : in  STD_LOGIC_VECTOR (7 downto 0);
+        B    : in  STD_LOGIC_VECTOR (7 downto 0);
+        Cin  : in  STD_LOGIC;
+        S    : out STD_LOGIC_VECTOR (7 downto 0);
+        Cout : out STD_LOGIC
+    );
+end full_adder_8_bit;
+
+architecture Structural of full_adder_8_bit is
+
+    component full_adder_1_bit
+        Port (
+            A    : in  STD_LOGIC;
+            B    : in  STD_LOGIC;
+            Cin  : in  STD_LOGIC;
+            S    : out STD_LOGIC;
+            Cout : out STD_LOGIC
+        );
+    end component;
+
+    signal C_internal : STD_LOGIC_VECTOR (7 downto 0);
+
+begin
+
+    FA0 : full_adder_1_bit
+        Port map (
+            A    => A(0),
+            B    => B(0),
+            Cin  => Cin,
+            S    => S(0),
+            Cout => C_internal(0)
+        );
+
+    GEN_FA : for i in 1 to 7 generate
+        FA_i : full_adder_1_bit
+            Port map (
+                A    => A(i),
+                B    => B(i),
+                Cin  => C_internal(i-1),
+                S    => S(i),
+                Cout => C_internal(i)
+            );
+    end generate GEN_FA;
+
+    Cout <= C_internal(7);
+
+end Structural;
+
+--------------------------------------------------------------------------------
+-- Banco_de_registrador_simplificado
+--------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+entity register_bank_simplified is
+    Generic (
+        NUM_REGISTERS : natural := 4; -- Número de registradores no banco
+        DATA_WIDTH    : natural := 8    -- Largura dos dados em bits
+    );
+    Port (
+        clk        : in  STD_LOGIC;
+        reset      : in  STD_LOGIC;
+        write_en   : in  STD_LOGIC; -- Habilita escrita
+        read_en_A  : in  STD_LOGIC; -- Habilita leitura para operando A
+        read_en_B  : in  STD_LOGIC; -- Habilita leitura para operando B
+        write_addr : in  STD_LOGIC_VECTOR (1 downto 0); -- Endereço para escrita (2 bits para 4 registradores)
+        read_addr_A  : in  STD_LOGIC_VECTOR (1 downto 0);  -- Endereço para leitura do operando A
+        read_addr_B  : in  STD_LOGIC_VECTOR (1 downto 0);  -- Endereço para leitura do operando B
+        write_data : in  STD_LOGIC_VECTOR (DATA_WIDTH-1 downto 0);
+        read_data_A  : out STD_LOGIC_VECTOR (DATA_WIDTH-1 downto 0); -- Saída do dado lido para operando A
+        read_data_B  : out STD_LOGIC_VECTOR (DATA_WIDTH-1 downto 0)  -- Saída do dado lido para operando B
+    );
+end register_bank_simplified;
+
+architecture Behavioral of register_bank_simplified is
+
+    -- Tipo de array para armazenar os registradores
+    type reg_array_t is array (0 to NUM_REGISTERS-1) of STD_LOGIC_VECTOR (DATA_WIDTH-1 downto 0);
+    signal registers : reg_array_t := (others => (others => '0'));
+    constant ZERO_VECTOR : STD_LOGIC_VECTOR(DATA_WIDTH-1 downto 0) := (others => '0');
+
+begin
+
+    -- Processo síncrono para escrita e reset
+    process (clk, reset)
+    begin
+        if reset = '1' then
+            registers <= (others => (others => '0')); -- Reseta todos os registradores
+        elsif rising_edge(clk) then
+            if write_en = '1' then
+                registers(to_integer(unsigned(write_addr))) <= write_data;
+            end if;
+        end if;
+    end process;
+
+    -- Leitura assíncrona dos registradores
+    read_data_A <= registers(to_integer(unsigned(read_addr_A))) when read_en_A = '1' else (others => 'Z');
+    read_data_B <= registers(to_integer(unsigned(read_addr_B))) when read_en_B = '1' else (others => 'Z');
+
+end Behavioral;
+
+--------------------------------------------------------------------------------
+-- decodificador_simplificado
+--------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+entity decoder_controller_simplified is
+    Port (
+        opcode_in         : in  STD_LOGIC_VECTOR (7 downto 0);
+        data_A_in         : in  STD_LOGIC_VECTOR (7 downto 0);
+        data_B_in         : in  STD_LOGIC_VECTOR (7 downto 0);
+        
+        -- Saídas de Controle para ULA
+        alu_enable        : out STD_LOGIC;
+        alu_A_src_sel     : out STD_LOGIC; -- 0: Dado do Registrador A, 1: N/A
+        alu_B_src_sel     : out STD_LOGIC; -- 0: Dado do Registrador B, 1: Dado Imediato (data_B_in)
+
+        -- Saídas para o Banco de Registradores
+        reg_write_en      : out STD_LOGIC;
+        reg_read_en_A     : out STD_LOGIC;
+        reg_read_en_B     : out STD_LOGIC;
+        reg_write_addr    : out STD_LOGIC_VECTOR (1 downto 0);
+        reg_read_addr_A   : out STD_LOGIC_VECTOR (1 downto 0);
+        reg_read_addr_B   : out STD_LOGIC_VECTOR (1 downto 0);
+        reg_write_data    : out STD_LOGIC_VECTOR (7 downto 0)
+    );
+end decoder_controller_simplified;
+
+architecture Behavioral of decoder_controller_simplified is
+    constant OPCODE_MOV_IMM  : STD_LOGIC_VECTOR (7 downto 0) := x"00";
+    constant OPCODE_ADD_REG  : STD_LOGIC_VECTOR (7 downto 0) := x"01";
+    constant OPCODE_ADD_IMM  : STD_LOGIC_VECTOR (7 downto 0) := x"02";
+begin
+    process (opcode_in, data_A_in, data_B_in)
+    begin
+        -- Valores padrão
+        alu_enable        <= '0';
+        alu_A_src_sel     <= '0';
+        alu_B_src_sel     <= '0';
+        reg_write_en      <= '0';
+        reg_read_en_A     <= '0';
+        reg_read_en_B     <= '0';
+        reg_write_addr    <= (others => '0');
+        reg_read_addr_A   <= (others => '0');
+        reg_read_addr_B   <= (others => '0');
+        reg_write_data    <= (others => '0');
+
+        case opcode_in is
+            when OPCODE_MOV_IMM =>
+                reg_write_en   <= '1';
+                reg_write_addr <= data_B_in(1 downto 0);
+                reg_write_data <= data_A_in;
+
+            when OPCODE_ADD_REG =>
+                alu_enable     <= '1';
+                reg_read_en_A  <= '1';
+                reg_read_en_B  <= '1';
+                reg_read_addr_A <= data_A_in(1 downto 0);
+                reg_read_addr_B <= data_B_in(1 downto 0);
+                alu_A_src_sel  <= '0'; -- Seleciona dado do Registrador A
+                alu_B_src_sel  <= '0'; -- Seleciona dado do Registrador B
+
+            when OPCODE_ADD_IMM =>
+                alu_enable     <= '1';
+                reg_read_en_A  <= '1';
+                reg_read_addr_A <= data_A_in(1 downto 0);
+                alu_A_src_sel  <= '0'; -- Seleciona dado do Registrador A
+                alu_B_src_sel  <= '1'; -- Seleciona dado imediato
+
+            when others =>
+                null;
+        end case;
+    end process;
+end Behavioral;
+
+--------------------------------------------------------------------------------
+-- processor_simplificado
+--------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+entity processor_core_simplified is
+    Port (
+        clk        : in  STD_LOGIC;
+        reset      : in  STD_LOGIC;
+        opcode_in  : in  STD_LOGIC_VECTOR (7 downto 0);
+        data_A_in  : in  STD_LOGIC_VECTOR (7 downto 0);
+        data_B_in  : in  STD_LOGIC_VECTOR (7 downto 0);
+
+        -- Saídas do sistema (para observação no testbench)
+        ula_result_out    : out STD_LOGIC_VECTOR (7 downto 0); -- Somador de 8 bits, resultado de 8 bits
+        ula_cout_out      : out STD_LOGIC;
+        reg_read_data_out : out STD_LOGIC_VECTOR (7 downto 0)  -- Saída do registrador lido (para ADD_REG/ADD_IMM)
+    );
+end processor_core_simplified;
+
+architecture Structural of processor_core_simplified is
+
+    -- Sinais de controle do Decoder
+    signal s_alu_enable     : STD_LOGIC;
+    signal s_alu_A_src_sel  : STD_LOGIC;
+    signal s_alu_B_src_sel  : STD_LOGIC;
+    signal s_reg_write_en   : STD_LOGIC;
+    signal s_reg_read_en_A  : STD_LOGIC;
+    signal s_reg_read_en_B  : STD_LOGIC;
+    signal s_reg_write_addr : STD_LOGIC_VECTOR (1 downto 0);
+    signal s_reg_read_addr_A: STD_LOGIC_VECTOR (1 downto 0);
+    signal s_reg_read_addr_B: STD_LOGIC_VECTOR (1 downto 0);
+    signal s_reg_write_data : STD_LOGIC_VECTOR (7 downto 0);
+
+    -- Sinais do Data Path
+    signal s_alu_A_in, s_alu_B_in : STD_LOGIC_VECTOR (7 downto 0);
+    signal s_ula_result           : STD_LOGIC_VECTOR (7 downto 0);
+    signal s_ula_cout             : STD_LOGIC;
+    signal s_reg_read_data_A, s_reg_read_data_B : STD_LOGIC_VECTOR (7 downto 0);
+
+begin
+    -- Instanciação do Decoder (apenas controle, sem feedback de dados)
+    DECODER_CTRL : entity work.decoder_controller_simplified
+        Port map (
+            opcode_in      => opcode_in,
+            data_A_in      => data_A_in,
+            data_B_in      => data_B_in,
+            alu_enable     => s_alu_enable,
+            alu_A_src_sel  => s_alu_A_src_sel,
+            alu_B_src_sel  => s_alu_B_src_sel,
+            reg_write_en   => s_reg_write_en,
+            reg_read_en_A  => s_reg_read_en_A,
+            reg_read_en_B  => s_reg_read_en_B,
+            reg_write_addr => s_reg_write_addr,
+            reg_read_addr_A=> s_reg_read_addr_A,
+            reg_read_addr_B=> s_reg_read_addr_B,
+            reg_write_data => s_reg_write_data
+        );
+
+    -- Lógica do Data Path (Multiplexadores para as entradas da ULA)
+    s_alu_A_in <= s_reg_read_data_A; -- A sempre vem do registrador A
+    s_alu_B_in <= data_B_in when s_alu_B_src_sel = '1' else s_reg_read_data_B; -- B vem do imediato ou do registrador B
+
+    -- Instanciação da ULA
+    ULA_ADDER : entity work.full_adder_8_bit
+        Port map (
+            A    => s_alu_A_in,
+            B    => s_alu_B_in,
+            Cin  => '0',
+            S    => s_ula_result,
+            Cout => s_ula_cout
+        );
+
+    -- Instanciação do Banco de Registradores
+    REG_BANK : entity work.register_bank_simplified
+        Generic map (NUM_REGISTERS => 4, DATA_WIDTH => 8)
+        Port map (
+            clk        => clk,
+            reset      => reset,
+            write_en   => s_reg_write_en,
+            read_en_A  => s_reg_read_en_A,
+            read_en_B  => s_reg_read_en_B,
+            write_addr => s_reg_write_addr,
+            read_addr_A  => s_reg_read_addr_A,
+            read_addr_B  => s_reg_read_addr_B,
+            write_data => s_reg_write_data,
+            read_data_A  => s_reg_read_data_A,
+            read_data_B  => s_reg_read_data_B
+        );
+
+    -- Conectar saídas do sistema
+    ula_result_out    <= s_ula_result when s_alu_enable = '1' else (others => '0');
+    ula_cout_out      <= s_ula_cout   when s_alu_enable = '1' else '0';
+    reg_read_data_out <= s_reg_read_data_A when s_reg_read_en_A = '1' else (others => '0');
+
+end Structural;
+
