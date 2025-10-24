@@ -32,6 +32,15 @@ component multiplicador8bits is
     );
 end component;
 
+component divisor8bits is
+    port(
+        dividend, divisor : in bit_vector(7 downto 0);
+        quotient : out bit_vector(7 downto 0);
+        remainder : out bit_vector(7 downto 0);
+        div_by_zero : out bit
+    );
+end component;
+
 -- Sinais para o somador
 signal a_signal, b_signal, resultado_signal : bit_vector(7 downto 0);
 signal carry_out_signal : bit;
@@ -43,6 +52,10 @@ signal carry_out_sub_signal : bit;
 -- Sinais para o multiplicador
 signal a_mult, b_mult, resultado_mult : bit_vector(7 downto 0);
 signal overflow_mult : bit;
+
+-- Sinais para o divisor
+signal dividend_signal, divisor_signal, quotient_signal, remainder_signal : bit_vector(7 downto 0);
+signal div_by_zero_signal : bit;
 
 begin
 
@@ -70,6 +83,15 @@ begin
     overflow => overflow_mult
   );
 
+  -- Instancia do divisor
+  DUT_DIVISOR: divisor8bits port map(
+    dividend => dividend_signal,
+    divisor => divisor_signal,
+    quotient => quotient_signal,
+    remainder => remainder_signal,
+    div_by_zero => div_by_zero_signal
+  );
+
   process
   begin
     -- Teste 1: Soma simples sem carry
@@ -92,7 +114,21 @@ begin
     assert(resultado_mult = "00010000") report "Fail 4x4" severity error;
     assert(overflow_mult = '0') report "Fail overflow 4x4" severity error;
 
-    assert false report "All tests passed!" severity note;
+    -- =========================================================================
+    -- TESTES DO DIVISOR
+    -- =========================================================================
+    
+    -- Teste 4: Divisao simples (8 / 3 = 2, resto 0)
+    dividend_signal <= "00001000";  -- 8
+    divisor_signal <= "00000011";   -- 3
+    wait for 1 ns;
+    assert(quotient_signal = "00000010") report "Fail 8/2 quotient" severity error;
+    
+    --SINAL DO MODULO
+    assert(remainder_signal = "00000010") report "Fail 8/2 remainder" severity error;
+    assert(div_by_zero_signal = '0') report "Fail 8/2 div_by_zero" severity error;
+    
+    
     wait;
   end process;
 end tb;
