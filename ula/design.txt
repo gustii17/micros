@@ -354,3 +354,78 @@ begin
     -- O bit 7 não é somado para evitar overflow
     
 end main;
+  entity divisor8bits is
+    port(
+        dividend, divisor : in bit_vector(7 downto 0);
+        quotient : out bit_vector(7 downto 0);
+        remainder : out bit_vector(7 downto 0);
+        div_by_zero : out bit
+    );
+end divisor8bits;
+
+architecture simple of divisor8bits is
+    
+    -- Função para subtração de 8 bits
+    function subtract8bits(a, b: bit_vector(7 downto 0)) return bit_vector is
+        variable result: bit_vector(7 downto 0);
+        variable borrow: bit;
+    begin
+        borrow := '0';
+        for i in 0 to 7 loop
+            result(i) := a(i) xor b(i) xor borrow;
+            borrow := (not a(i) and b(i)) or (not a(i) and borrow) or (b(i) and borrow);
+        end loop;
+        return result;
+    end function;
+    
+    -- Função para comparar se a >= b
+    function greater_or_equal(a, b: bit_vector(7 downto 0)) return boolean is
+    begin
+        for i in 7 downto 0 loop
+            if a(i) > b(i) then
+                return true;
+            elsif a(i) < b(i) then
+                return false;
+            end if;
+        end loop;
+        return true; -- são iguais
+    end function;
+    
+begin
+    process(dividend, divisor)
+        variable temp_quotient : bit_vector(7 downto 0);
+        variable temp_remainder : bit_vector(7 downto 0);
+        variable temp_dividend_bit : bit;
+    begin
+        if divisor = "00000000" then
+            div_by_zero <= '1';
+            temp_quotient := "00000000";
+            temp_remainder := "00000000";
+        else
+            div_by_zero <= '0';
+            temp_quotient := "00000000";
+            temp_remainder := "00000000";
+            
+            for i in 7 downto 0 loop
+                -- Desloca quociente e resto para esquerda
+                temp_quotient := temp_quotient(6 downto 0) & '0';
+                temp_remainder := temp_remainder(6 downto 0) & '0';
+                
+                -- Extrai bit atual do dividendo
+                temp_dividend_bit := dividend(i);
+                
+                -- Define bit menos significativo do resto
+                temp_remainder(0) := temp_dividend_bit;
+                
+                -- Verifica se pode subtrair
+                if greater_or_equal(temp_remainder, divisor) then
+                    temp_remainder := subtract8bits(temp_remainder, divisor);
+                    temp_quotient(0) := '1';
+                end if;
+            end loop;
+        end if;
+        
+        quotient <= temp_quotient;
+        remainder <= temp_remainder;
+    end process;
+end simple;
