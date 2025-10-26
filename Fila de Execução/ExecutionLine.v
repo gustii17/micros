@@ -58,54 +58,101 @@ module ExecutionLine (
     );
 
     // ---------- EXECUTION ----------
-
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             write_enable_reg <= 0;
             done <= 0;
         end else if (!loader_done) begin
             case (opcode)
-
-                8'b00001101: begin // MOV
+                8'h00: begin // MOV
                     write_address <= operand1;
                     write_data <= operand2;
                     write_enable_reg <= 1;
                     $display("MOV R%d, %d -> R%d = %d", operand1, operand2, operand1, operand2);
                 end
 
-                8'b00000001: begin // ADD
+                8'h01: begin // ADD
                     write_address <= operand1;
                     write_data <= alu_result;
                     write_enable_reg <= 1;
                     $display("ADD R%d, R%d -> result = %d", operand1, operand2, alu_result);
                 end
 
-                8'b00000010: begin // SUB
+                8'h02: begin // ADDin (register + immediate)
+                    write_address <= operand1;
+                    write_data <= alu_result;
+                    write_enable_reg <= 1;
+                    $display("ADDin R%d, %d -> result = %d", operand1, operand2, alu_result);
+                end
+
+                8'h03: begin // SUB
                     write_address <= operand1;
                     write_data <= alu_result;
                     write_enable_reg <= 1;
                     $display("SUB R%d, R%d -> result = %d", operand1, operand2, alu_result);
                 end
 
-                8'b00000011: begin // MUL
-                    write_address <= operand1;
-                    write_data <= alu_result;
-                    write_enable_reg <= 1;
-                    $display("MUL R%d, R%d -> result = %d", operand1, operand2, alu_result);
-                end
-
-                8'b00000100: begin // DIV
+                8'h04: begin // DIV
                     write_address <= operand1;
                     write_data <= alu_result;
                     write_enable_reg <= 1;
                     $display("DIV R%d, R%d -> result = %d", operand1, operand2, alu_result);
                 end
 
+                8'h05: begin // MUL
+                    write_address <= operand1;
+                    write_data <= alu_result;
+                    write_enable_reg <= 1;
+                    $display("MUL R%d, R%d -> result = %d", operand1, operand2, alu_result);
+                end
+
+                8'h06: begin // RES (special / reserved)
+                    write_enable_reg <= 0;
+                    $display("RES (reserved instruction)");
+                end
+
+                8'h07: begin // CMP
+                    write_enable_reg <= 0; // comparação apenas altera flags (não registradores)
+                    $display("CMP R%d, R%d", operand1, operand2);
+                end
+
+                8'h08: begin // AND
+                    write_address <= operand1;
+                    write_data <= alu_result;
+                    write_enable_reg <= 1;
+                    $display("AND R%d, R%d -> result = %d", operand1, operand2, alu_result);
+                end
+
+                8'h09: begin // ORR
+                    write_address <= operand1;
+                    write_data <= alu_result;
+                    write_enable_reg <= 1;
+                    $display("ORR R%d, R%d -> result = %d", operand1, operand2, alu_result);
+                end
+
+                8'h0A: begin // NOT
+                    write_address <= operand1;
+                    write_data <= alu_result;
+                    write_enable_reg <= 1;
+                    $display("NOT R%d -> result = %d", operand1, alu_result);
+                end
+
+                8'h0B: begin // XOR
+                    write_address <= operand1;
+                    write_data <= alu_result;
+                    write_enable_reg <= 1;
+                    $display("XOR R%d, R%d -> result = %d", operand1, operand2, alu_result);
+                end
+
+                8'hFF: begin // NOP
+                    write_enable_reg <= 0;
+                    $display("NOP");
+                end
+
                 default: begin
                     write_enable_reg <= 0;
                     $display("Unknown instruction (opcode = %b)", opcode);
                 end
-
             endcase
         end else begin
             done <= 1;
