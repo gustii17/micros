@@ -9,18 +9,18 @@
 \usepackage{multicol}
 
 \begin{document}
-\title{\textbf{Relatório - Projeto 1}}
+\title{\textbf{Relatório Microprocessadores - Projeto 1}}
 \author{}
-\date{\textbf{Disciplina: Microprocessadores \\ 2025.2}}
+\date{\textbf{Disciplina: Microcontroladores \\ 2025.2}}
 \maketitle
 
-% ------------------- Equipe -------------------
-\section*{Equipe Responsável}
+\section*{Equipe:}
 
-% ------------------- Introdução -------------------
+\textbf{Marina Vasques Rodrigues} \\
+E-mail: marinavasq18@alu.ufc.br \\
+Matrícula: 496500 \\[0.5em]
 \section{Introdução}
 
-% ------------------- Compilador -------------------
 \section{Compilador}
 \subsection{Mapeamento de Códigos}
 \subsection{Funcionamento do Compilador}
@@ -28,7 +28,6 @@
 \subsection{Exemplo de Entrada e Saída}
 \subsection{Conclusão}
 
-% ------------------- Requisitos do Compilador -------------------
 \section{Requisitos do Compilador de Assembly}
 \begin{itemize}
     \item Identificação e remoção de comentários.
@@ -37,14 +36,12 @@
     \item Análise sintática: verificar número correto de operandos por instrução.
 \end{itemize}
 
-% ------------------- Processador -------------------
 \section{Processador}
 \subsection*{Componentes do Processador}
 \subsection*{Ciclo de Operação}
 \subsection*{Operações Suportadas}
 \subsection*{Sinais de Saída}
 
-% ------------------- Requisitos do Processador -------------------
 \section{Requisitos do Processador}
 \begin{itemize}
     \item Palavra de pelo menos 8 bits.
@@ -60,36 +57,18 @@
         \end{itemize}
 \end{itemize}
 
-% ------------------- Memória e Arquivo Binário -------------------
-\section{Memória Externa}
-\subsection*{Memória de Instruções}
-\subsection*{Módulo InstructionLoader}
-\subsection*{Módulo TopLevel}
-
-\section{Leitura Arquivo binário}
-
-
-% ------------------- ULA -------------------
-\section{Unidade Lógica e Aritmética (ULA)}
-\subsection*{Principais Funções da ULA}
-\subsection*{Arquitetura da ULA}
-\subsection*{Importância da ULA}
-
-% ------------------- Registradores -------------------
-\section{Registrador}
-\subsection{Entradas e Saídas}
-\subsection{Funcionamento do Registrador}
-\subsection{Vantagens e Aplicações}
-\subsection{Conclusão}
-
-% ------------------- Diagramas e Tabelas -------------------
 \section{Diagramas e Tabelas}
 \subsection{Diagrama de Blocos}
+
+
 \subsection{Tabela de Opcodes}
+
+
 \subsection{Tabela de Registradores}
+
+
 \subsection{Mapa de Memória e Endereçamento}
 
-% ------------------- Considerações finais -------------------
 \section{Considerações Finais}
 
 \end{document}
