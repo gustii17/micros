@@ -1,0 +1,16 @@
+mov - 00
+ADD - 01
+ADDin  02 
+sub - 03
+div - 04
+mul - 05
+res - 06
+cmp - 07
+and - 08
+orr - 09
+not 0A
+xor - 0B
+nop - ff
+
+
+
