@@ -1,0 +1,148 @@
+-- Biblioteca padrão para operações com sistemas digitais
+library IEEE;
+-- Pacote para tipos std_logic (bit com mais estados: 0,1,Z,X,etc)
+use IEEE.std_logic_1164.all;
+-- Pacote para ler/escrever std_logic_vector em arquivos texto
+use IEEE.std_logic_textio.all;
+-- Pacote para operações de entrada/saída em arquivos
+use std.textio.all;
+
+-- Declaração da entidade do testbench (não tem portas de entrada/saída)
+entity leitor_arquivo_tb is
+end leitor_arquivo_tb;
+
+-- Arquitetura do testbench - implementação do comportamento
+architecture tb of leitor_arquivo_tb is
+    -- CONSTANTE: Define o tamanho da memória como 32 posições
+    constant MEM_SIZE : integer := 32;
+    
+    -- TIPO: Define um novo tipo de dados - array de 32 elementos de 8 bits cada
+    type mem_array is array (0 to MEM_SIZE-1) of std_logic_vector(7 downto 0);
+    
+    -- SINAL: Declara a memória principal, inicializada com zeros
+    signal memoria : mem_array := (others => (others => '0'));
+    
+    -- SINAL: Flag booleana para indicar quando a leitura terminou
+    signal leitura_concluida : boolean := false;
+    
+    -- SINAL: Contador com número de dados efetivamente lidos
+    signal num_dados_lidos : integer := 0;
+    
+begin
+    -- PROCESSO PRINCIPAL: Responsável por ler o arquivo e carregar na memória
+    process
+        -- VARIÁVEL: Handle para o arquivo aberto em modo leitura
+        file f : text open read_mode is "dados.bin";
+        -- VARIÁVEL: Buffer para armazenar uma linha do arquivo
+        variable linha : line;
+        -- VARIÁVEL: Armazena temporariamente cada valor de 8 bits lido
+        variable slv_val : std_logic_vector(7 downto 0);
+        -- VARIÁVEL: Contador interno para percorrer as posições da memória
+        variable i : integer := 0;
+    begin
+        -- Aguarda 10ns no início para estabilização da simulação
+        wait for 10 ns;
+        
+        -- INICIALIZAÇÃO: Zera toda a memória (todas posições = "00000000")
+        memoria <= (others => (others => '0'));
+        -- Reseta a flag de leitura concluída
+        leitura_concluida <= false;
+        -- Reseta o contador interno
+        i := 0;
+        
+        -- VERIFICAÇÃO: Testa se o arquivo está vazio ou não existe
+        if endfile(f) then
+            -- Emite aviso se arquivo estiver vazio
+            report "Arquivo vazio ou não encontrado!" severity warning;
+        else
+            -- LOOP PRINCIPAL: Executa enquanto houver linhas no arquivo E espaço na memória
+            while not endfile(f) and i < MEM_SIZE loop
+                -- Lê uma linha completa do arquivo para o buffer 'linha'
+                readline(f, linha);
+                
+                -- Verifica se a linha não está vazia
+                if linha'length > 0 then
+                    -- Converte o conteúdo da linha para std_logic_vector(7 downto 0)
+                    read(linha, slv_val);
+                    -- Armazena o valor lido na posição atual da memória
+                    memoria(i) <= slv_val;
+                    -- Incrementa o contador de posições
+                    i := i + 1;
+                    -- Relatório: Mostra qual endereço foi carregado e com qual valor
+                    report "Endereço " & integer'image(i-1) & " : " & 
+                           to_string(slv_val) severity note;
+                end if;
+            end loop;
+        end if;
+        
+        -- ATUALIZA SINAIS: Após terminar a leitura
+        -- Armazena o total de dados lidos no sinal
+        num_dados_lidos <= i;
+        -- Sinaliza que a leitura foi concluída
+        leitura_concluida <= true;
+        -- Fecha o arquivo para liberar recursos
+        file_close(f);
+        
+        -- Relatório final com resumo da operação
+        report "Leitura concluída! " & integer'image(i) & " dados carregados na memória." severity note;
+        -- Para a execução deste processo (wait sem timeout = para sempre)
+        wait;
+    end process;
+
+    -- PROCESSO SECUNDÁRIO: Para testar e verificar o conteúdo da memória
+    process
+    begin
+        -- Aguarda até que o processo principal termine a leitura
+        wait until leitura_concluida;
+        -- Aguarda mais 20ns para garantir estabilidade
+        wait for 20 ns;
+        
+        -- RELATÓRIO: Cabeçalho para o dump da memória
+        report "=== CONTEÚDO DA MEMÓRIA ===";
+        -- LOOP: Percorre todas as posições que contêm dados válidos
+        for i in 0 to num_dados_lidos-1 loop
+            -- Imprime cada posição da memória no formato: memoria[0] = 10101010
+            report "memoria[" & integer'image(i) & "] = " & 
+                   to_string(memoria(i));
+        end loop;
+        
+        -- Aguarda mais 10ns antes da próxima operação
+        wait for 10 ns;
+        -- RELATÓRIO: Cabeçalho para acessos específicos
+        report "=== ACESSOS ESPECÍFICOS ===";
+        -- Acessa e exibe o primeiro elemento da memória (índice 0)
+        report "Primeiro dado: " & to_string(memoria(0));
+        -- Acessa e exibe o último elemento válido da memória
+        report "Último dado: " & to_string(memoria(num_dados_lidos-1));
+        
+        -- Para a execução deste processo
+        wait;
+    end process;
+
+    -- PROCESSO TERCIÁRIO: Exemplo de uso da memória em operações
+    process
+        -- VARIÁVEL: Para armazenar resultado temporário das operações
+        variable temp : std_logic_vector(7 downto 0);
+    begin
+        -- Aguarda até que a leitura esteja concluída
+        wait until leitura_concluida;
+        
+        -- Aguarda 30ns antes de iniciar o processamento
+        wait for 30 ns;
+        -- INICIALIZA: Zera a variável temporária
+        temp := (others => '0');
+        
+        -- LOOP: Soma todos os valores válidos da memória
+        for i in 0 to num_dados_lidos-1 loop
+            -- Converte temp e memoria[i] para unsigned, soma, e converte de volta para std_logic_vector
+            temp := std_logic_vector(unsigned(temp) + unsigned(memoria(i)));
+        end loop;
+        
+        -- Exibe o resultado da soma de todos os elementos
+        report "Soma de todos os valores: " & to_string(temp);
+        
+        -- Para a execução deste processo
+        wait;
+    end process;
+
+end tb;
