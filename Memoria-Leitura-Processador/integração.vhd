@@ -2,19 +2,19 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity TopLevel is
+entity TopLevelCorrected is
     Port ( 
         clk : in STD_LOGIC;
         reset : in STD_LOGIC;
         result : out STD_LOGIC_VECTOR(7 downto 0);
         flags : out STD_LOGIC_VECTOR(3 downto 0);
-        done : out STD_LOGIC  -- Sinal indicando que a execução foi encerrada
+        done : out STD_LOGIC
     );
-end TopLevel;
+end TopLevelCorrected;
 
-architecture Behavioral of TopLevel is
+architecture Behavioral of TopLevelCorrected is
 
-    -- Componente: InstructionMemory
+    -- Componentes
     component InstructionMemory
         Port ( 
             clk : in STD_LOGIC;
@@ -25,7 +25,6 @@ architecture Behavioral of TopLevel is
         );
     end component;
 
-    -- Componente: InstructionLoader
     component InstructionLoader
         Port ( 
             clk : in STD_LOGIC;
@@ -41,7 +40,6 @@ architecture Behavioral of TopLevel is
         );
     end component;
 
-    -- Componente: Processor
     component processor_core_simplified
         Port (
             clk : in STD_LOGIC;
@@ -55,91 +53,92 @@ architecture Behavioral of TopLevel is
         );
     end component;
 
-    -- Sinais de interconexão
-    signal opcode_sig : STD_LOGIC_VECTOR(7 downto 0);
-    signal operand1_sig : STD_LOGIC_VECTOR(7 downto 0);
-    signal operand2_sig : STD_LOGIC_VECTOR(7 downto 0);
-    signal instruction_sig : STD_LOGIC_VECTOR(23 downto 0);
-    signal write_enable_sig : STD_LOGIC;
-    signal address_sig : STD_LOGIC_VECTOR(7 downto 0);
-    signal data_out_sig : STD_LOGIC_VECTOR(23 downto 0);
+    -- Sinais para o LOADER → MEMÓRIA
+    signal loader_to_mem_write : STD_LOGIC;
+    signal loader_to_mem_addr : STD_LOGIC_VECTOR(7 downto 0);
+    signal loader_to_mem_data : STD_LOGIC_VECTOR(23 downto 0);
+    
+    -- Sinais para MEMÓRIA → PROCESSADOR
+    signal mem_to_proc_data : STD_LOGIC_VECTOR(23 downto 0);
+    signal proc_read_addr : STD_LOGIC_VECTOR(7 downto 0);
+    
+    -- Sinais de controle
     signal loader_done_sig : STD_LOGIC;
-    signal instruction_ready_sig : STD_LOGIC;
+    signal execution_mode : STD_LOGIC := '0'; -- 0=loading, 1=execution
+    signal program_counter : unsigned(7 downto 0) := (others => '0');
     
     -- Sinais do processador
     signal processor_result : STD_LOGIC_VECTOR(7 downto 0);
     signal processor_cout : STD_LOGIC;
-    signal processor_reg_data : STD_LOGIC_VECTOR(7 downto 0);
-    
-    -- Sinais de controle interno
-    signal stop_execution : STD_LOGIC := '0';
-    signal done_reg : STD_LOGIC := '0';
-    
-    -- Definição de opcodes especiais
-    constant OPCODE_HALT : STD_LOGIC_VECTOR(7 downto 0) := x"FF";  -- Instrução de parada
 
 begin
 
-    -- Mapeamento das saídas
     result <= processor_result;
-    flags <= "000" & processor_cout;  -- Flags: [3:1] = zeros, [0] = carry out
-    done <= done_reg;
+    flags <= "000" & processor_cout;
 
-    -- Instância da Memória de Instruções
+    -- Memória de Instruções
     instr_mem : InstructionMemory
         port map (
             clk => clk,
-            address => address_sig,
-            write_enable => write_enable_sig,
-            data_in => data_out_sig,
-            data_out => instruction_sig
+            address => proc_read_addr when execution_mode = '1' else loader_to_mem_addr,
+            write_enable => loader_to_mem_write when execution_mode = '0' else '0',
+            data_in => loader_to_mem_data,
+            data_out => mem_to_proc_data
         );
 
-    -- Instância do Carregador de Instruções
+    -- Carregador de Instruções
     instr_loader : InstructionLoader
         port map (
             clk => clk,
             reset => reset,
-            opcode_out => opcode_sig,
-            data_A_out => operand1_sig,
-            data_B_out => operand2_sig,
-            instruction_ready => instruction_ready_sig,
+            opcode_out => open,  -- Não conectado (processador lê da memória)
+            data_A_out => open,
+            data_B_out => open,
+            instruction_ready => open,
             done => loader_done_sig,
-            mem_write_enable => write_enable_sig,
-            mem_address => address_sig,
-            mem_data_out => data_out_sig
+            mem_write_enable => loader_to_mem_write,
+            mem_address => loader_to_mem_addr,
+            mem_data_out => loader_to_mem_data
         );
 
-    -- Instância do Processador
+    -- Processador (agora lê da MEMÓRIA)
     processor : processor_core_simplified
         port map (
             clk => clk,
             reset => reset,
-            opcode_in => opcode_sig,
-            data_A_in => operand1_sig,
-            data_B_in => operand2_sig,
+            opcode_in => mem_to_proc_data(23 downto 16),  -- Lê da memória!
+            data_A_in => mem_to_proc_data(15 downto 8),   -- Lê da memória!
+            data_B_in => mem_to_proc_data(7 downto 0),    -- Lê da memória!
             ula_result_out => processor_result,
             ula_cout_out => processor_cout,
-            reg_read_data_out => processor_reg_data
+            reg_read_data_out => open
         );
 
-    -- Controle de término de execução
-    EXECUTION_CONTROL : process(clk, reset)
+    -- Controle de endereço de memória
+    proc_read_addr <= STD_LOGIC_VECTOR(program_counter);
+
+    -- Máquina de estados do sistema
+    SYSTEM_CONTROL : process(clk, reset)
     begin
         if reset = '1' then
-            done_reg <= '0';
-            stop_execution <= '0';
-        elsif rising_edge(clk) then
-            -- Verifica se é uma instrução de parada (HALT)
-            if opcode_sig = OPCODE_HALT then
-                stop_execution <= '1';
-                done_reg <= '1';
-            end if;
+            execution_mode <= '0';
+            program_counter <= (others => '0');
+            done <= '0';
             
-            -- Se o loader terminou e não há mais instruções válidas
-            if loader_done_sig = '1' and instruction_ready_sig = '0' and stop_execution = '0' then
-                stop_execution <= '1';
-                done_reg <= '1';
+        elsif rising_edge(clk) then
+            if execution_mode = '0' then
+                -- Fase de carregamento
+                if loader_done_sig = '1' then
+                    execution_mode <= '1';  -- Muda para fase de execução
+                    program_counter <= (others => '0');  -- PC começa em 0
+                end if;
+            else
+                -- Fase de execução
+                if program_counter < 255 then
+                    program_counter <= program_counter + 1;  -- Incrementa PC
+                else
+                    done <= '1';  -- Fim da execução
+                end if;
             end if;
         end if;
     end process;
