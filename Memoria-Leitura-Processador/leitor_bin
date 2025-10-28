@@ -1,0 +1,146 @@
+-- Declaração das bibliotecas necessárias
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;      -- Para tipos std_logic e std_logic_vector
+use IEEE.NUMERIC_STD.ALL;         -- Para tipos unsigned e operações numéricas
+use STD.TEXTIO.ALL;               -- Para operações de leitura/escrita de arquivos
+
+-- Definição da entidade (interface do módulo)
+entity InstructionLoader is
+    Port ( 
+        clk : in STD_LOGIC;                       -- Sinal de clock
+        reset : in STD_LOGIC;                     -- Sinal de reset assíncrono
+        opcode_out : out STD_LOGIC_VECTOR(7 downto 0);    -- Opcode da instrução atual
+        data_A_out : out STD_LOGIC_VECTOR(7 downto 0);    -- Primeiro operando
+        data_B_out : out STD_LOGIC_VECTOR(7 downto 0);    -- Segundo operando
+        instruction_ready : out STD_LOGIC;        -- Sinal indica instrução disponível
+        done : out STD_LOGIC                      -- Sinal indica fim do carregamento
+    );
+end InstructionLoader;
+
+-- Definição da arquitetura (implementação do módulo)
+architecture Behavioral of InstructionLoader is
+    -- Definição do tipo de memória: array de 256 posições de 8 bits cada
+    type memory_type is array (0 to 255) of STD_LOGIC_VECTOR(7 downto 0);
+    
+    -- Função para carregar arquivo binário na memória
+    -- 'impure' indica que a função pode retornar valores diferentes em chamadas iguais
+    impure function load_memory_file(filename : in string) return memory_type is
+        file file_ptr : text;                     -- Ponteiro para o arquivo
+        variable file_line : line;                -- Linha do arquivo
+        variable memory_content : memory_type;    -- Conteúdo da memória a ser preenchido
+        variable bit_vector : bit_vector(7 downto 0);  -- Variável temporária para leitura
+        variable current_line : integer := 0;     -- Contador de linhas lidas
+    begin
+        -- Inicializa memória com zeros (caso arquivo não preencha toda memória)
+        for i in 0 to 255 loop
+            memory_content(i) := (others => '0');
+        end loop;
+        
+        -- Tenta abrir e ler o arquivo
+        file_open(file_ptr, filename, READ_MODE);  -- Abre arquivo em modo leitura
+        
+        -- Loop de leitura: continua até fim do arquivo ou preencher 256 posições
+        while (not endfile(file_ptr) and current_line < 256) loop
+            readline(file_ptr, file_line);        -- Lê uma linha do arquivo
+            read(file_line, bit_vector);          -- Converte linha para bit_vector
+            memory_content(current_line) := to_stdlogicvector(bit_vector);  -- Converte para std_logic_vector
+            current_line := current_line + 1;     -- Incrementa contador
+        end loop;
+        
+        file_close(file_ptr);                     -- Fecha o arquivo
+        return memory_content;                    -- Retorna memória preenchida
+    end function;
+    
+    -- Sinais internos do módulo
+    signal memory : memory_type := load_memory_file("instructions.bin");  -- Memória com instruções
+    signal pc : unsigned(7 downto 0) := (others => '0');  -- Program Counter (contador de programa)
+    signal state : unsigned(2 downto 0) := (others => '0');  -- Estado atual da máquina de estados
+    
+    -- Registros para armazenar os dados de saída
+    signal opcode_reg : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');  -- Registro do opcode
+    signal data_A_reg : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');  -- Registro do operando A
+    signal data_B_reg : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');  -- Registro do operando B
+    signal instruction_ready_reg : STD_LOGIC := '0';  -- Registro do sinal ready
+    signal done_reg : STD_LOGIC := '0';               -- Registro do sinal done
+    
+    -- Definição dos estados da máquina de estados finitos (FSM)
+    constant LOAD_OPCODE   : unsigned(2 downto 0) := "000";  -- Estado: carregar opcode
+    constant LOAD_DATA_A   : unsigned(2 downto 0) := "001";  -- Estado: carregar operando A
+    constant LOAD_DATA_B   : unsigned(2 downto 0) := "010";  -- Estado: carregar operando B
+    constant OUTPUT_READY  : unsigned(2 downto 0) := "011";  -- Estado: sinalizar instrução pronta
+    constant DONE_STATE    : unsigned(2 downto 0) := "100";  -- Estado: finalizado
+
+-- Início da arquitetura comportamental
+begin
+    -- Conexão dos sinais de saída com os registros internos
+    opcode_out <= opcode_reg;                     -- Conecta opcode_reg à saída
+    data_A_out <= data_A_reg;                     -- Conecta data_A_reg à saída
+    data_B_out <= data_B_reg;                     -- Conecta data_B_reg à saída
+    instruction_ready <= instruction_ready_reg;   -- Conecta ready_reg à saída
+    done <= done_reg;                             -- Conecta done_reg à saída
+
+    -- Processo principal: sensível a clock e reset
+    process(clk, reset)
+    begin
+        -- Reset assíncrono: quando reset = '1'
+        if reset = '1' then
+            -- Reset assíncrono
+            pc <= (others => '0');                -- Zera program counter
+            opcode_reg <= (others => '0');        -- Zera registro do opcode
+            data_A_reg <= (others => '0');        -- Zera registro do operando A
+            data_B_reg <= (others => '0');        -- Zera registro do operando B
+            instruction_ready_reg <= '0';         -- Desativa sinal ready
+            done_reg <= '0';                      -- Desativa sinal done
+            state <= LOAD_OPCODE;                 -- Volta para estado inicial
+            
+        -- Borda de subida do clock
+        elsif rising_edge(clk) then
+            -- Valores padrão (para evitar latch)
+            instruction_ready_reg <= '0';         -- Por padrão, ready é '0'
+            
+            -- Máquina de estados finitos
+            case state is
+                -- Estado: Carregar Opcode
+                when LOAD_OPCODE =>
+                    if pc < 256 then              -- Verifica se ainda há instruções
+                        opcode_reg <= memory(to_integer(pc));  -- Lê opcode da memória
+                        pc <= pc + 1;             -- Incrementa program counter
+                        state <= LOAD_DATA_A;     -- Próximo estado: carregar operando A
+                        instruction_ready_reg <= '0';  -- Instrução ainda não está pronta
+                    else
+                        state <= DONE_STATE;      -- Todas instruções lidas, vai para estado final
+                    end if;
+                    
+                -- Estado: Carregar Operando A
+                when LOAD_DATA_A =>
+                    data_A_reg <= memory(to_integer(pc));  -- Lê operando A da memória
+                    pc <= pc + 1;                 -- Incrementa program counter
+                    state <= LOAD_DATA_B;         -- Próximo estado: carregar operando B
+                    instruction_ready_reg <= '0';  -- Instrução ainda não está pronta
+                    
+                -- Estado: Carregar Operando B
+                when LOAD_DATA_B =>
+                    data_B_reg <= memory(to_integer(pc));  -- Lê operando B da memória
+                    pc <= pc + 1;                 -- Incrementa program counter
+                    state <= OUTPUT_READY;        -- Próximo estado: sinalizar pronta
+                    instruction_ready_reg <= '0';  -- Instrução ainda não está pronta
+                    
+                -- Estado: Sinalizar Instrução Pronta
+                when OUTPUT_READY =>
+                    -- Instrução completa carregada, sinaliza pronta
+                    instruction_ready_reg <= '1';  -- Ativa sinal indicando instrução disponível
+                    state <= LOAD_OPCODE;         -- Volta para carregar próxima instrução
+                    
+                -- Estado: Finalizado
+                when DONE_STATE =>
+                    done_reg <= '1';              -- Ativa sinal de finalização
+                    instruction_ready_reg <= '0';  -- Desativa sinal ready
+                    
+                -- Estado padrão (para casos não previstos)
+                when others =>
+                    state <= LOAD_OPCODE;         -- Retorna para estado inicial
+            end case;
+        end if;
+    end process;
+
+end Behavioral;
