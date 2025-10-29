@@ -1,16 +1,20 @@
-mov - 00
-ADD - 01
-ADDin  02 
-sub - 03
-div - 04
-mul - 05
-res - 06
-cmp - 07
-and - 08
-orr - 09
-not 0A
-xor - 0B
-nop - ff
+mov - (00) -> [dado] [enderesso] 
+ADD - (01) -> [enderesso] [enderesso] 
+ADI - (02) -> [dado] [enderesso]
+sub - (03) -> [enderesso] [enderesso]
+div - (04) -> [enderesso] [enderesso]
+mul - (05) -> [enderesso] [enderesso]
+res - (06) -> [enderesso] [enderesso]
+cmp - (07) -> [enderesso] [enderesso]
+and - (08) -> [enderesso] [enderesso]
+orr - (09) -> [enderesso] [enderesso]
+not - (0A) -> [enderesso]
+xor - (0B) -> [enderesso] [enderesso]
+nop - (ff) -> 
 
 
+r1 - operando
+r2 - operando
+r3 - operando/resultado?
+r4 - flags
 

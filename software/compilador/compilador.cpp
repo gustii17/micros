@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <cstdio>
 using namespace std;
 
 
@@ -54,7 +55,7 @@ string pegar_palavra(string line, int& j){
         j++;
     }
     if(j > (int)line.size() || line[j] == '\n') return palavra;
-    while(line[j] != ' ' && j < (int)line.size()){
+    while(line[j] != ' ' && j < (int)line.size() && line[j] != '\n'){
         palavra = palavra + line[j];
         j++;
     }
@@ -62,12 +63,23 @@ string pegar_palavra(string line, int& j){
 }
 
 informacao obeter_opcode(string minem){
-    informacao inf = mapa[minem];
+    informacao inf;
+    if(mapa.find(minem) == mapa.end()){
+        cout << "ERROR - comand not found: " << minem << endl;
+        return inf;
+    }
+    inf = mapa[minem];
     return inf;
 }
 
 string identar(string line){
-
+    int j = 0;
+    while (j < (int) line.size() && line[j] == ' ')
+    {
+        j++;
+    }
+    if(j >= 0) line.erase(0, j);
+    
     for(int i = 1; i < (int) line.size(); i++){
         if(line[i] == '/' && line[i-1] == '/'){
             line.erase(i-1);
@@ -80,9 +92,68 @@ string identar(string line){
 
 string trad_hexa(string palavra){
     string bin;
+    if(palavra.size() != 4){
+        return "";
+    } 
     for(int i = 2; i < 4; i++){
+        if(hexa.find(palavra[i]) == hexa.end()){
+            return "";
+        }
         bin = bin + hexa[palavra[i]];
     }
+    return bin;
+}
+
+string trad_bin(string palavra){
+    string bin;
+    int i;
+    if(palavra.size() != 10){
+        return "";
+    } 
+    for(i = 2; i < 10; i++){
+        if(!(palavra[i] == '1' || palavra[i] == '0')){
+            return "";
+        }
+        bin = bin + palavra[i];
+    }
+    return bin;
+}
+
+string trad_dec(string palavra){
+    string bin;
+    int acum = 0;
+    int i = 2;
+    
+    while(palavra[i] >= '0' && palavra[i] <= '9'){
+        acum = acum * 10;
+        acum = acum + palavra[i] - '0';
+        i++; 
+    }
+    
+    if(i == 2 || i < (int) palavra.size()){
+        return "";
+    }                     
+    i = 0;
+    if(acum >= 248) return "";
+    while (acum > 0)
+    {
+        i++;
+        if(acum % 2 == 1){
+            acum = (acum - 1) / 2;
+            bin = '1' + bin;
+        }
+        else{
+            acum = acum / 2;
+            bin = '0' + bin; 
+        }
+    }
+    
+    
+    while(i < 8){
+        bin = '0' + bin;
+        i++; 
+    }
+    
     return bin;
 }
 
@@ -93,16 +164,22 @@ string obter_dado(string palavra){
             return trad_hexa(palavra); 
         }
         else if(palavra[1] == 'b'){
-            //if(palavra.size() != 10) return "";
-            //return trad_bin();
+            return trad_bin(palavra);
         }
         else if(palavra[1] == 'd'){
-           // return trad_dec();
+           return trad_dec(palavra);
         }
     }
     return "";
 }
 
+void erro(fstream& arq, fstream& bin){
+    bin.close();
+    arq.close();
+    cout << "apagando o arquivo" << endl;
+    remove("exampl.bin");
+    return;
+}
 
 
 int main(){
@@ -123,10 +200,8 @@ int main(){
     {
         num_line++;
         getline(arq, line);
-        //arq >> line;
         
         line = identar(line);
-        cout << num_line << ' ';
         if(line.empty()){
             cout << endl;
             continue;
@@ -134,25 +209,45 @@ int main(){
         
         int j = 0;
         string mnem = pegar_palavra(line, j);
-        cout << mnem << ' ';
+        //cout << mnem << ' ';
         
         informacao inf = obeter_opcode(mnem);
+        if(inf.opcode.empty()){
+            erro(arq, bin);
+            return 404;
+        }
         inf.opcode = inf.opcode + '\n';
         bin.write((char*) inf.opcode.c_str(), 9);
 
         for(int i = 0; i < inf.quant_dadpos; i++ ){
             string palavra = pegar_palavra(line, j);
-            cout << palavra << ' ';
+            if(palavra == ""){
+                cout << "ERROR -- line: " << num_line << ":       missing arguments" << endl;
+                erro(arq, bin);
+                return 404;
+            }
+            
             string dado = obter_dado(palavra);
-            cout << dado << endl;
+
+            if(dado.empty()){
+                cout << "ERROR -- line: " << num_line << ":       argument invalid: " << palavra << endl;
+                erro(arq, bin);
+                return 404;
+            }
             dado = dado + '\n';
             bin.write((char*) dado.c_str(), 9);
         }
+        string palavra = pegar_palavra(line, j);
+        if(!(palavra == "")){
+                cout << "ERROR -- line: " << num_line << ":       most arguments: " << palavra << endl;
+                erro(arq, bin);
+                return 404;
+            }
         //string dado = "\n";
         //bin.write((char*) dado.c_str(), 1);
-        cout << endl;
         
     }
+    bin.close();
     arq.close();
     
 
