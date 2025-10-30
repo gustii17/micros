@@ -1,17 +1,18 @@
 #include <iostream>
 #include <fstream>
 #include <map>
-#include <vector>
 #include <string>
 #include <cstdio>
 using namespace std;
 
 
+//tipo de dado para pegar o opcode e a quantidaade de parametro
 struct informacao
 {
     string opcode;
     int quant_dadpos;
 };
+//mapa que relaciona o mnemmocnico com o opcode e a quantidaade de parametro
 map<string, informacao> mapa{
     {"MOV", informacao{"00000000", 2}},
     {"ADD", informacao{"00000001", 2}},
@@ -28,6 +29,8 @@ map<string, informacao> mapa{
     {"NOP", informacao{"11111111", 0}}
 };
 
+
+//mapa para teansformar hexa em binario
 map<char, string> hexa{
     {'0', "0000"},
     {'1', "0001"},
@@ -132,7 +135,8 @@ string trad_bin(string palavra){
             bin = bin + '0';
         } 
     }
-    for(i = 2; i < palavra.size(); i++){
+    //separando o binario e verificando se está certo
+    for(i = 2; i < (int) palavra.size(); i++){
         if(!(palavra[i] == '1' || palavra[i] == '0')){
             return "";
         }
@@ -141,22 +145,28 @@ string trad_bin(string palavra){
     return bin;
 }
 
+//traduz decimal em binario
 string trad_dec(string palavra){
     string bin;
     int acum = 0;
     int i = 2;
-    
+
+    //tranforma de string para inteiro para as operaçõs
     while(palavra[i] >= '0' && palavra[i] <= '9'){
         acum = acum * 10;
         acum = acum + palavra[i] - '0';
         i++; 
     }
     
+    //verifica se a formatação esta certa
     if(i == 2 || i < (int) palavra.size()){
         return "";
     }                     
     i = 0;
+    //valor maximo permitido
     if(acum >= 248) return "";
+
+    //transforma decimal em binario
     while (acum > 0)
     {
         i++;
@@ -170,7 +180,7 @@ string trad_dec(string palavra){
         }
     }
     
-    
+    //completa com zero até termos 8 bits
     while(i < 8){
         bin = '0' + bin;
         i++; 
@@ -215,7 +225,7 @@ int main(){
     int num_line = 0; // contador da linha
 
     arq.open("assembly.txt");
-    bin.open ("exampl.bin", ios::out | ios::trunc | ios::binary);
+    bin.open ("dados.bin", ios::out | ios::trunc | ios::binary);
 
     //verifica se o arquivo de leitura esta aberto
     if(!arq.is_open()){
@@ -266,25 +276,26 @@ int main(){
             
             //obtem o binario do parametro
             string dado = obter_dado(palavra);
-
+            //verificação de erro
             if(dado.empty()){
                 cout << "ERROR -- line: " << num_line << ":       argument invalid: " << palavra << endl;
                 erro(arq, bin);
                 return 404;
             }
+            //escrevendo o dado no arquivo
             dado = dado + '\n';
             bin.write((char*) dado.c_str(), 9);
         }
+        //se houver mais parametros que o permitido, acusa de erro
         string palavra = pegar_palavra(line, j);
         if(!(palavra == "")){
                 cout << "ERROR -- line: " << num_line << ":       most arguments: " << palavra << endl;
                 erro(arq, bin);
                 return 404;
             }
-        //string dado = "\n";
-        //bin.write((char*) dado.c_str(), 1);
         
     }
+    //fechando os arquivos
     bin.close();
     arq.close();
     

@@ -1,14 +1,2 @@
 MOV 0x0A 0b1000 //colocando o numero 10 no endereço 0
 MOV 0x05 0x11 // colocando o numero 5 no endereço 1
-ADD 0x00 0d123 // somando o endereço 0 com o endereço 1
-   ADI 0x0F  0x00 //soma o dado no endereço 0 com o valor 15
-     NOP // não faz nada
-     SUB 0x00 0x01 // subtrai o dado no endereço 1 pelo dado no endereço 2
-    MUL 0x00 0x01 // multiplica o dado no endereço 1 pelo dado no endereço 2
-   DIV 0x00 0x01 // divide o dado no endereço 1 pelo dado no endereço 2
-   RES 0x00 0x01 // Resto da divisão do dado no endereço 1 pelo dado no endereço 2
-CMP 0x00 0x01 // compara o dado no endereço 1 do dado no endereço 2
-AND 0x00 0x01 // faz a lógica and entre os bits do dados nos endereços 1 e 2
-ORR 0x00 0x01 // faz a lógica or entre os bits do dados nos endereços 1 e 2
-NOT 0x00 // faz a lógica not nos bits do dado do endereço 1
-XOR 0x00 0x01 // faz a lógica xor entre os bits do dados nos endereços 1 e 2
