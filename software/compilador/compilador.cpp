@@ -47,23 +47,46 @@ map<char, string> hexa{
     {'F', "1111"},
     
 };
+string identar(string line){
+    int j = 0;
+    //remover espaços do inicio
+    while (j < (int) line.size() && line[j] == ' ')
+    {
+        j++;
+    }
+    if(j >= 0) line.erase(0, j);
+    
+    //remover comentarios
+    for(int i = 1; i < (int) line.size(); i++){
+        if(line[i] == '/' && line[i-1] == '/'){
+            line.erase(i-1);
+            return line;
+        }
+    }
+    return line;
+}
 
+// obtem a proxima palavra da lnha line, depois da posição j
 string pegar_palavra(string line, int& j){
-    //to_do
     string palavra;
+    //pula os espaços vazios
     while(line[j] == ' ' && (j < (int)line.size())){
         j++;
     }
+    //obtem a palavra 
     if(j > (int)line.size() || line[j] == '\n') return palavra;
     while(line[j] != ' ' && j < (int)line.size() && line[j] != '\n'){
         palavra = palavra + line[j];
         j++;
     }
+    //se tiver uma palavra, retorna a palavra, caso não, retorna vazio
     return palavra;
 }
 
+//tranforma o mnemonico em binario
 informacao obeter_opcode(string minem){
     informacao inf;
+    //se estiver no map, ele pega o binario e a quantidade de operandos correspondente, caso contrario, ele retorna vazio 
     if(mapa.find(minem) == mapa.end()){
         cout << "ERROR - comand not found: " << minem << endl;
         return inf;
@@ -72,30 +95,20 @@ informacao obeter_opcode(string minem){
     return inf;
 }
 
-string identar(string line){
-    int j = 0;
-    while (j < (int) line.size() && line[j] == ' ')
-    {
-        j++;
-    }
-    if(j >= 0) line.erase(0, j);
-    
-    for(int i = 1; i < (int) line.size(); i++){
-        if(line[i] == '/' && line[i-1] == '/'){
-            line.erase(i-1);
-            return line;
-        }
-    }
-    //to_do
-    return line;
-}
 
+//traduz de hexa para binario
 string trad_hexa(string palavra){
     string bin;
-    if(palavra.size() != 4){
+    //so irá aceitar hexa de 2 digitos, pois nosso limite é o binario de 8 digitos
+    if(palavra.size() > 4){
         return "";
     } 
+    //se o hexa só tiver 1 digito, acrescenta 0000 para formar o binsrio
+    if(palavra.size() == 3){
+        bin = "0000";
+    }
     for(int i = 2; i < 4; i++){
+        //pega do mapa de hexa, o binario correspondente ao digito
         if(hexa.find(palavra[i]) == hexa.end()){
             return "";
         }
@@ -107,10 +120,19 @@ string trad_hexa(string palavra){
 string trad_bin(string palavra){
     string bin;
     int i;
-    if(palavra.size() != 10){
+    //se o binario for maior que 10, ele estoura nosso limite, erro
+    if(palavra.size() > 10){
+        cout << palavra.size();
         return "";
     } 
-    for(i = 2; i < 10; i++){
+    //se for menor ele adiciona 0 para completar a o binario
+    if(palavra.size() < 10){
+        int k = 10 - (int) palavra.size();
+        for(int i = 0; i < k; i++){
+            bin = bin + '0';
+        } 
+    }
+    for(i = 2; i < palavra.size(); i++){
         if(!(palavra[i] == '1' || palavra[i] == '0')){
             return "";
         }
@@ -157,10 +179,11 @@ string trad_dec(string palavra){
     return bin;
 }
 
+//obtem o binario correspondente da palavra
 string obter_dado(string palavra){
+    //verifica a estrutura 0x para hexa, 0b para binario 0d para decimal
     if(palavra[0] == '0'){
         if(palavra[1] == 'x'){
-            //if(palavra.size() != 4) return "";
             return trad_hexa(palavra); 
         }
         else if(palavra[1] == 'b'){
@@ -170,9 +193,11 @@ string obter_dado(string palavra){
            return trad_dec(palavra);
         }
     }
+    //caso não esteja na estrutura, retorna o erro
     return "";
 }
 
+//ccaso a função erro seja chamada, ela fecha os arquivos e apaga o binario, simbolizando um erro
 void erro(fstream& arq, fstream& bin){
     bin.close();
     arq.close();
@@ -183,50 +208,63 @@ void erro(fstream& arq, fstream& bin){
 
 
 int main(){
-    fstream arq;
-    fstream bin;
-    string line;
-    int num_line = 0;
+    //arquivos usados
+    fstream arq; // leitura
+    fstream bin; // binario gerado
+    string line; // linha de leitura atual
+    int num_line = 0; // contador da linha
 
     arq.open("assembly.txt");
     bin.open ("exampl.bin", ios::out | ios::trunc | ios::binary);
 
-
+    //verifica se o arquivo de leitura esta aberto
     if(!arq.is_open()){
         cout << "arquivo nao aberto";
         return 404;
     }
+    //laço de leitura
     while (!arq.eof())
     {
         num_line++;
-        getline(arq, line);
+        getline(arq, line); //pega a linha atual
         
+        //retirar comentarios + retirar espaços do inicio
         line = identar(line);
+
+        //se a linha apos a identação estiver vazia, passa para o proximo
         if(line.empty()){
             cout << endl;
             continue;
         }
         
-        int j = 0;
-        string mnem = pegar_palavra(line, j);
-        //cout << mnem << ' ';
+
+        int j = 0; // marcará a posição na linha
+        string mnem = pegar_palavra(line, j); // pega o mminemonico da linha
         
+        //obtem o o binario a partir do minemonico da primeira palavra da linha
         informacao inf = obeter_opcode(mnem);
+        // se retornar vazio, ocorreu um erro, e ele encerra o programa
         if(inf.opcode.empty()){
             erro(arq, bin);
             return 404;
         }
+
+        //colocando uma quebra de linha no final do opcode e escrevendo no binario
         inf.opcode = inf.opcode + '\n';
         bin.write((char*) inf.opcode.c_str(), 9);
 
+        // pega a quantidade de parametros correspondente do mnemonico 
         for(int i = 0; i < inf.quant_dadpos; i++ ){
+            //pegando o proximo parametro
             string palavra = pegar_palavra(line, j);
+            //se retornar vazio, não achou parametro, e ocorrreu um erro
             if(palavra == ""){
                 cout << "ERROR -- line: " << num_line << ":       missing arguments" << endl;
                 erro(arq, bin);
-                return 404;
+                return 400;
             }
             
+            //obtem o binario do parametro
             string dado = obter_dado(palavra);
 
             if(dado.empty()){
