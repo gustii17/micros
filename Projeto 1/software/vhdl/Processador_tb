@@ -1,0 +1,128 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity processor_core_simplified_tb is
+end processor_core_simplified_tb;
+
+architecture Behavioral of processor_core_simplified_tb is
+
+    -- Componente a ser testado (DUT - Device Under Test)
+    component processor_core_simplified
+        Port (
+            clk        : in  STD_LOGIC;
+            reset      : in  STD_LOGIC;
+            opcode_in  : in  STD_LOGIC_VECTOR (7 downto 0);
+            data_A_in  : in  STD_LOGIC_VECTOR (7 downto 0);
+            data_B_in  : in  STD_LOGIC_VECTOR (7 downto 0);
+
+            ula_result_out    : out STD_LOGIC_VECTOR (7 downto 0);
+            ula_cout_out      : out STD_LOGIC;
+            reg_read_data_out : out STD_LOGIC_VECTOR (7 downto 0)
+        );
+    end component;
+
+    -- Sinais para o testbench
+    signal clk_tb        : STD_LOGIC := '0';
+    signal reset_tb      : STD_LOGIC := '1'; -- Inicia em reset
+    signal opcode_in_tb  : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+    signal data_A_in_tb  : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+    signal data_B_in_tb  : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+
+    signal ula_result_out_tb    : STD_LOGIC_VECTOR (7 downto 0);
+    signal ula_cout_out_tb      : STD_LOGIC;
+    signal reg_read_data_out_tb : STD_LOGIC_VECTOR (7 downto 0);
+
+    -- Constantes de tempo
+    constant CLK_PERIOD : time := 10 ns;
+
+    -- Definições de opcodes (conforme instruction_set_simplified.md)
+    constant OPCODE_MOV_IMM  : STD_LOGIC_VECTOR (7 downto 0) := x"00";
+    constant OPCODE_ADD_REG  : STD_LOGIC_VECTOR (7 downto 0) := x"01";
+    constant OPCODE_ADD_IMM  : STD_LOGIC_VECTOR (7 downto 0) := x"02";
+    constant OPCODE_NOP      : STD_LOGIC_VECTOR (7 downto 0) := x"FF";
+
+begin
+
+    -- Instanciar o DUT (Device Under Test)
+    DUT : processor_core_simplified
+        Port map (
+            clk        => clk_tb,
+            reset      => reset_tb,
+            opcode_in  => opcode_in_tb,
+            data_A_in  => data_A_in_tb,
+            data_B_in  => data_B_in_tb,
+
+            ula_result_out    => ula_result_out_tb,
+            ula_cout_out      => ula_cout_out_tb,
+            reg_read_data_out => reg_read_data_out_tb
+        );
+
+    -- Geração do clock
+    clk_gen : process
+    begin
+        loop
+            clk_tb <= '0';
+            wait for CLK_PERIOD / 2;
+            clk_tb <= '1';
+            wait for CLK_PERIOD / 2;
+        end loop;
+    end process;
+
+    -- Processo de geração de estímulos
+    stimulus_process : process
+    begin
+        -- 1. Reset inicial
+        reset_tb <= '1';
+        wait for CLK_PERIOD * 2;
+        reset_tb <= '0';
+        wait for CLK_PERIOD * 2;
+
+        report "--- Teste MOV_IMM (Escrever 0x10 no Reg 0) ---" severity note;
+        -- Escrever 0x10 no Registrador 0
+        opcode_in_tb <= OPCODE_MOV_IMM;
+        data_A_in_tb <= x"10"; -- Dado a ser escrito
+        data_B_in_tb <= x"00"; -- Endereço do registrador 0
+        wait for CLK_PERIOD;
+
+        report "--- Teste MOV_IMM (Escrever 0x05 no Reg 1) ---" severity note;
+        -- Escrever 0x05 no Registrador 1
+        opcode_in_tb <= OPCODE_MOV_IMM;
+        data_A_in_tb <= x"05"; -- Dado a ser escrito
+        data_B_in_tb <= x"01"; -- Endereço do registrador 1
+        wait for CLK_PERIOD;
+
+        report "--- Teste ADD_REG (Reg 0 + Reg 1 = 0x10 + 0x05 = 0x15) ---" severity note;
+        -- Somar Registrador 0 e Registrador 1
+        opcode_in_tb <= OPCODE_ADD_REG;
+        data_A_in_tb <= x"00"; -- Endereço do registrador A (Reg 0)
+        data_B_in_tb <= x"01"; -- Endereço do registrador B (Reg 1)
+        wait for CLK_PERIOD;
+        assert (ula_result_out_tb = x"15" and ula_cout_out_tb = '0')
+            report "Test ADD_REG Failed" severity error;
+
+        report "--- Teste ADD_IMM (Reg 0 + 0x0A = 0x10 + 0x0A = 0x1A) ---" severity note;
+        -- Somar Registrador 0 com valor imediato 0x0A
+        opcode_in_tb <= OPCODE_ADD_IMM;
+        data_A_in_tb <= x"00"; -- Endereço do registrador A (Reg 0)
+        data_B_in_tb <= x"0A"; -- Valor imediato
+        wait for CLK_PERIOD;
+        assert (ula_result_out_tb = x"1A" and ula_cout_out_tb = '0')
+            report "Test ADD_IMM Failed" severity error;
+
+        report "--- Teste NOP ---" severity note;
+        -- NOP
+        opcode_in_tb <= OPCODE_NOP;
+        data_A_in_tb <= x"00";
+        data_B_in_tb <= x"00";
+        wait for CLK_PERIOD;
+        assert (ula_result_out_tb = x"00" and ula_cout_out_tb = '0') -- Corrigido: (others => '0') para x"00"
+            report "Test NOP Failed" severity error;
+
+        report "Todos os testes concluídos com sucesso!" severity note;
+        wait for 100 ns;
+        assert false report "Fim da simulação: testes OK" severity failure;
+    end process stimulus_process;
+
+end Behavioral;
+

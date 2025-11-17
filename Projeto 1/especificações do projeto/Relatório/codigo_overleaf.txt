@@ -1,0 +1,74 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{multicol}
+
+\begin{document}
+\title{\textbf{Relatório Microprocessadores - Projeto 1}}
+\author{}
+\date{\textbf{Disciplina: Microcontroladores \\ 2025.2}}
+\maketitle
+
+\section*{Equipe:}
+
+\textbf{Marina Vasques Rodrigues} \\
+E-mail: marinavasq18@alu.ufc.br \\
+Matrícula: 496500 \\[0.5em]
+\section{Introdução}
+
+\section{Compilador}
+\subsection{Mapeamento de Códigos}
+\subsection{Funcionamento do Compilador}
+\subsection{Mensagens de Erro}
+\subsection{Exemplo de Entrada e Saída}
+\subsection{Conclusão}
+
+\section{Requisitos do Compilador de Assembly}
+\begin{itemize}
+    \item Identificação e remoção de comentários.
+    \item Implementação do conjunto mínimo de instruções.
+    \item Análise semântica para palavras inválidas.
+    \item Análise sintática: verificar número correto de operandos por instrução.
+\end{itemize}
+
+\section{Processador}
+\subsection*{Componentes do Processador}
+\subsection*{Ciclo de Operação}
+\subsection*{Operações Suportadas}
+\subsection*{Sinais de Saída}
+
+\section{Requisitos do Processador}
+\begin{itemize}
+    \item Palavra de pelo menos 8 bits.
+    \item Registradores obrigatórios: 3 para operações matemáticas e 1 para flags.
+    \item Conjunto mínimo de instruções:
+        \begin{itemize}
+            \item Movimentação e transferência de dados
+            \item Manipulação de bits e deslocamento
+            \item Operações aritméticas: ADD, SUB, MUL, DIV, MOD
+            \item Operações relacionais: comparação
+            \item Operações lógicas: AND, OR, NOT, XOR
+            \item Outros: macros, constantes, operações I/O, NOP, HALT
+        \end{itemize}
+\end{itemize}
+
+\section{Diagramas e Tabelas}
+\subsection{Diagrama de Blocos}
+
+
+\subsection{Tabela de Opcodes}
+
+
+\subsection{Tabela de Registradores}
+
+
+\subsection{Mapa de Memória e Endereçamento}
+
+\section{Considerações Finais}
+
+\end{document}
