@@ -1,0 +1,1 @@
+* [computador com stm32 blue pill](https://www.youtube.com/watch?v=95oD683-7CE)
