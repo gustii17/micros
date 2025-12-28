@@ -12,3 +12,4 @@
   * [aprendendo arm](https://youtube.com/playlist?list=PL2EF13wm-hWAlQe87UB2HV0SVhBXFpXbn&si=HI2gE624DtfHGJDQ)
   * [Legal para ter uma ideia, mas ele faz em x86](https://www.youtube.com/@LanksTutoriais/videos)
 
+

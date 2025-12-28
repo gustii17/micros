@@ -32,7 +32,7 @@ loop2:
 		LDR r8, [r5, #4]
 		CMP r7, r8
 		STRGT r8, [r5]
-		STRGT r7, [r5, #5] 
+		STRGT r7, [r5, #4] 
 		
 		//j--
 		SUB r5, #4
