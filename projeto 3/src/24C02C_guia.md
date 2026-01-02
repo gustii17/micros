@@ -13,7 +13,7 @@ Observação: SCK é, na realidade, o pino SCL do Datasheet.
 |24C02C | STM32 | Função |
 | :--- | :--- | :--- |
 | SDA | PB7 | Barramento de Dados (DEVE TER RESISTOR DE PULL-UP!) |
-| SCL | PB6 | Barramento de Dados (DEVE TER RESISTOR DE PULL-UP!) |
+| SCL | PB6 | Barramento de Clock (DEVE TER RESISTOR DE PULL-UP!) |
 | A0 | GND | Seletor |
 | A1 | GND | Seletor |
 | A2 | GND | Seletor |
