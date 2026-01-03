@@ -34,12 +34,12 @@ O método de leitura é o **escaneamento por colunas (Column Scanning)**:
 | :--- | :--- | :--- | :--- |
 | **1** | Coluna 1 | `PB0` | Saída (Output) |
 | **2** | Coluna 2 | `PB1` | Saída (Output) |
-| **3** | Coluna 3 | `PB10` | Saída (Output) |
-| **4** | Coluna 4 | `PB11` | Saída (Output) |
-| **A** | Linha A (7, 8, 9, /) | `PB4` | Entrada com Pull-up |
-| **B** | Linha B (4, 5, 6, *) | `PB5` | Entrada com Pull-up |
-| **C** | Linha C (1, 2, 3, -) | `PB6` | Entrada com Pull-up |
-| **D** | Linha D (ON, 0, =, +) | `PB7` | Entrada com Pull-up |
+| **3** | Coluna 3 | `PB8` | Saída (Output) |
+| **4** | Coluna 4 | `PB9` | Saída (Output) |
+| **A** | Linha A (7, 8, 9, /) | `PB12` | Entrada com Pull-up |
+| **B** | Linha B (4, 5, 6, *) | `PB13` | Entrada com Pull-up |
+| **C** | Linha C (1, 2, 3, -) | `PB14` | Entrada com Pull-up |
+| **D** | Linha D (ON, 0, =, +) | `PB15` | Entrada com Pull-up |
 
 ## 3. Interface de Saída - Display de 7 Segmentos
 
