@@ -1,0 +1,11 @@
+../Core/Src/LCD.c:4:6:LCD_init	1
+../Core/Src/LCD.c:24:6:write_word	4
+../Core/Src/LCD.c:33:6:write_tel	1
+../Core/Src/LCD.c:41:6:write_letter	1
+../Core/Src/LCD.c:48:6:get_ascii	3
+../Core/Src/LCD.c:64:6:traduzir_binario	4
+../Core/Src/LCD.c:83:6:set_adress	2
+../Core/Src/LCD.c:97:6:LCD_clear	1
+../Core/Src/LCD.c:109:6:set_zero	1
+../Core/Src/LCD.c:124:6:set_pin	1
+../Core/Src/LCD.c:143:6:pulse	1
