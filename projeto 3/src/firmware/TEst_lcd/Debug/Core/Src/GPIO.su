@@ -1,0 +1,5 @@
+../Core/Src/GPIO.c:3:6:GPIO_SetPin	16	static
+../Core/Src/GPIO.c:7:6:GPIO_ResetPin	16	static
+../Core/Src/GPIO.c:11:9:GPIO_ReadPin	16	static
+../Core/Src/GPIO.c:15:10:PIN_MASK	16	static
+../Core/Src/GPIO.c:18:6:Delay_us	24	static,ignoring_inline_asm

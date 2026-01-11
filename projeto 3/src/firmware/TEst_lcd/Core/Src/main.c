@@ -1,101 +1,178 @@
-
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : Main program body
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2026 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
 #include "main.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 #include "LCD.h"
 #include "telas.h"
+#include "Keypad.h"
+#include "GPIO.h"
+#include "mem.h"
 
+
+
+/* USER CODE END Includes */
+
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
 
 
-/* Pinagem LCD
- * PA0 - D0
- * PA1 - D1
- * PA2 - D2
- * PA3 - D3
- * PA4 - D4
- * PA5 - D5
- * PA6 - D6
- * PA7 - D7
- * PB0 - E
- * PB11 - RS
- *
- *
- */
+/* USER CODE END 0 */
 
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
   SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
-
-  //LCD funções
-  //iniciar
+  I2C_Init();
+  /* USER CODE BEGIN 2 */
   LCD_init();
-  HAL_Delay(1000);
-  //enviar caractere, exemplo: W, minusculas virão maiusculas (tabela ACISS)
-  write_letter('w');
-
-  //enviar palavra, necessario um array de char terminado em '\0'
-  	char msg[] = "ikkkac";
-  	char msg2[] = "hello";
-  	char msg3[] = "world!";
-
-  	//enviando
-  	write_word(msg);
+   keypad_init();
+   HAL_Delay(1000);
+   LCD_clear();
 
 
-  	//limpar o lcd
-  	LCD_clear();
+/*
+   uint8_t w = 0x41; // 'A'
+   uint8_t r = 0x00;
+   EEPROM_Write(0x0010, &w, 1);
+   HAL_Delay(10); // (melhor seria ACK polling dentro do driver, mas isso ajuda)
+   EEPROM_Read(0x0010, &r, 1);
 
-  	//setar o cursor, o primeiro é a coluna indo de 0 a 15, e o segundo, a linha, 0 ou 1.
-  	set_adress(4, 0);
+  write_letter((char)r);
+  w = 0x42; // 'A'
+  r = 0x00;
+     EEPROM_Write(0x0020, &w, 1);
+     HAL_Delay(10); // (melhor seria ACK polling dentro do driver, mas isso ajuda)
+     EEPROM_Read(0x0020, &r, 1);
+     write_letter((char)r);
+     HAL_Delay(1000);
+*/
+  /* USER CODE END 2 */
 
-  	//testando
-  	write_word(msg2);
-
-  	//trocando linha
-  	set_adress(4, 1);
-
-  	//testando
-  	 write_word(msg3);
-  	 HAL_Delay(1000);
-
-
-  	//tela 0 - carregando
-  	 load();
-
-  	 //Tela 1 - inicio
-  	Tela_inicio();
-  	HAL_Delay(2000);
-
-
-  	//tela 2 - jogo
-  	 //Tela 1
-
-  	 int tamanho_palavra = 6;
-  	 Tela_forca(tamanho_palavra);
-  	 set_adress(11, 0);
-  	 HAL_Delay(2000);
-
-
-  	//TELA DE VITRORIA
-  	tela_vitoria();
-  	HAL_Delay(2000);
-  	//TELA DE DERROTA
-  	tela_derrota();
-  	HAL_Delay(2000);
-
-
-
-
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+   char buff[100];
+  int i = 0;
   while (1)
   {
+    /* USER CODE END WHILE */
+	  char c =  Keypad_Scan();
+	  if(c == '*'){
 
+		  buff[i] = '\0';
+		  write_word(buff);
+		  HAL_Delay(1000);
+		  load();
+		  LCD_clear();
+		  EEPROM_Write_word(0x0020, buff, i);
+		  HAL_Delay(1000);
+		  LCD_clear();
+		  load();
+		  LCD_clear();
+		  uint8_t r = 0x00;
+		  EEPROM_Read(0x0020, &r, 1);
+		  write_letter((char)r);
+		  HAL_Delay(1000);
+		  char word[100];
+		  EEPROM_READ_word(0x0020, word, i);
+		  word[i+1] = '\0';
+		write_word(word);
+
+
+
+
+		  i = 0;
+	  }
+	  else if(c!=0 ){
+		  buff[i] = c;
+		  i++;
+		  write_letter(c);
+
+
+
+	  }
+
+    /* USER CODE BEGIN 3 */
   }
+  /* USER CODE END 3 */
 }
 
-
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -142,33 +219,57 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4
-                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
+                          |GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA1 PA2 PA3 PA4
-                           PA5 PA6 PA7 PA8
-                           PA9 PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4
-                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_10|GPIO_PIN_11
+                          , GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PA0 PA1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA2 PA3 PA4 PA5
+                           PA6 PA7 PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
+                          |GPIO_PIN_6|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_11, GPIO_PIN_RESET);
+  /*Configure GPIO pins : PB0 PB1 PB10 PB11
+                           PB6 PB7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_10|GPIO_PIN_11
+                         ;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-   /*Configure GPIO pins : PA1 PA2 PA3 PA4
-                            PA5 PA6 PA7 PA8
-                            PA9 PA10 */
-   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_11;
-   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-   GPIO_InitStruct.Pull = GPIO_NOPULL;
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  /*Configure GPIO pins : PB8 PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
+
+
+          HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+
+          GPIO_InitStruct.Pin = GPIO_PIN_13;
+          GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+          GPIO_InitStruct.Pull = GPIO_NOPULL;
+          GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+          HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
 
   /* USER CODE END MX_GPIO_Init_2 */
 }

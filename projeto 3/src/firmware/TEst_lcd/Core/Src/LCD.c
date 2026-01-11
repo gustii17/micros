@@ -7,18 +7,23 @@ void LCD_init(){
 	  */
 	  set_zero();
 
+
+	  //Modo 4 bits
+	  set_pin(0, 0, 1, 1, 0, 0 ,0 ,0 ,0, 1);
+	  set_pin(0, 0, 1, 1, 0, 0 ,1 ,0 ,0, 1);
+
 	  //limpar LCD
-	  set_pin(0, 0, 0, 0, 0, 0 ,0 ,1 ,0);
+	  set_pin(0, 0, 0, 0, 0, 0 ,0 ,1 ,0, 1);
 
 	    //modo 8 bits
-	  set_pin(0, 0, 1, 1, 1, 0 ,0 ,0 ,0);
+	  set_pin(0, 0, 1, 0, 1, 0 ,0 ,0 ,0, 1);
 
 	    //Liga LCD, Liga cursor, desliga, blink
-	  set_pin(0, 0, 0, 0, 1, 1 ,1 ,0 ,0);
+	  set_pin(0, 0, 0, 0, 1, 1 ,1 ,0 ,0, 1);
 
 	    // Habilita incremento, desliga scroll
 	    //modo 8 bits
-	  set_pin(0, 0, 0, 0, 0, 1 ,1 ,0 ,0);
+	  set_pin(0, 0, 0, 0, 0, 1 ,1 ,0 ,0, 1);
 }
 
 void write_word(char* word){
@@ -41,7 +46,7 @@ void write_tel(char* msg, char* msg2){
 void write_letter(char letter){
 	GPIO_PinState ascii[8];
 	get_ascii(letter, ascii);
-	set_pin(ascii[0], ascii[1], ascii[2], ascii[3], ascii[4], ascii[5], ascii[6], ascii[7], 1);
+	set_pin(ascii[0], ascii[1], ascii[2], ascii[3], ascii[4], ascii[5], ascii[6], ascii[7], 1, 1);
 	HAL_Delay(10);
 }
 
@@ -87,7 +92,7 @@ void set_adress(int colun, int line){
 	}
 	GPIO_PinState ascii[8];
 	traduzir_binario(adress, ascii);
-	set_pin(1, ascii[1], ascii[2], ascii[3], ascii[4], ascii[5], ascii[6], ascii[7], 0);
+	set_pin(1, ascii[1], ascii[2], ascii[3], ascii[4], ascii[5], ascii[6], ascii[7], 0, 1);
 	HAL_Delay(100);
 
 
@@ -96,7 +101,7 @@ void set_adress(int colun, int line){
 
 void LCD_clear(){
 	//limpa o lcd e coloca o cursor no inico
-	set_pin(0, 0, 0, 0, 0, 0 ,0 ,1 ,0);
+	set_pin(0, 0, 0, 0, 0, 0 ,0 ,1 ,0, 1);
 	//possivelmente vou precisar do 00
 	set_zero();
 }
@@ -107,15 +112,12 @@ void LCD_clear(){
 
 
 void set_zero(){
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 0);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, 0);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, 0);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, 0);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, 0);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 0);
+
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 0);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, 0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, 0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, 0);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, 0);
 	HAL_Delay(2);
 }
@@ -123,27 +125,30 @@ void set_zero(){
 // d8-d1 + rs
 void set_pin(GPIO_PinState pin_7, GPIO_PinState pin_6, GPIO_PinState pin_5,
 		GPIO_PinState pin_4, GPIO_PinState pin_3, GPIO_PinState pin_2,
-		GPIO_PinState pin_1, GPIO_PinState pin_0, GPIO_PinState pin_11){
-
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, pin_0);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, pin_1);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, pin_2);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, pin_3);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, pin_4);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, pin_5);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, pin_6);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, pin_7);
+		GPIO_PinState pin_1, GPIO_PinState pin_0, GPIO_PinState pin_11, int var){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, pin_11);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, pin_4);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, pin_5);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, pin_6);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, pin_7);
 	HAL_Delay(2);
 	pulse();
+	if(var == 0) return;
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, pin_0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, pin_1);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, pin_2);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, pin_3);
+	HAL_Delay(2);
+	pulse();
+
 
 
 }
 
 void pulse(){
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 1);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, 1);
 	HAL_Delay(2);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, 0);
 	HAL_Delay(2);
 }
 

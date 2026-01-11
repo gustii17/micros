@@ -1,0 +1,9 @@
+../Core/Src/mem.c:16:6:I2C_Init	8	static
+../Core/Src/mem.c:33:6:I2C_Start	8	static
+../Core/Src/mem.c:51:6:I2C_Stop	8	static
+../Core/Src/mem.c:69:6:I2C_WriteByte	24	static
+../Core/Src/mem.c:118:9:I2C_ReadByte	24	static
+../Core/Src/mem.c:170:6:EEPROM_Write	24	static
+../Core/Src/mem.c:184:6:EEPROM_Write_word	24	static
+../Core/Src/mem.c:192:6:EEPROM_READ_word	24	static
+../Core/Src/mem.c:201:6:EEPROM_Read	32	static
